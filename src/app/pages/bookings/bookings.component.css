@@ -1,0 +1,142 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #0b1220;
+  color: #e5e7eb;
+}
+
+/* Layout */
+.dashboard {
+  padding: 20px 30px;
+}
+
+/* Header */
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.dashboard-header p {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Cards */
+.card {
+  background: #111827;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.stat h2 {
+  margin: 8px 0;
+  font-size: 24px;
+}
+
+.stat p {
+  color: #9ca3af;
+}
+
+.stat span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Colors */
+.green { color: #22c55e; }
+.gold { color: #f59e0b; }
+.blue { color: #3b82f6; }
+.purple { color: #8b5cf6; }
+.orange { color: #f97316; }
+.cyan { color: #06b6d4; }
+.red { color: #ef4444; }
+
+/* Grid */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Progress Bars */
+.progress {
+  margin: 12px 0;
+}
+
+.progress label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.bar {
+  height: 6px;
+  background: #1f2937;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: 10px;
+}
+
+/* Activity */
+.activity div {
+  padding: 10px 0;
+  border-bottom: 1px solid #1f2937;
+  font-size: 14px;
+}
+
+/* Table */
+.table-card {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th {
+  text-align: left;
+  font-size: 12px;
+  color: #9ca3af;
+  padding-bottom: 10px;
+}
+
+td {
+  padding: 12px 0;
+  border-top: 1px solid #1f2937;
+}
+
+/* Badge */
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge.green {
+  background: rgba(34,197,94,0.15);
+  color: #22c55e;
+}
+
+.badge.blue {
+  background: rgba(59,130,246,0.15);
+  color: #3b82f6;
+}

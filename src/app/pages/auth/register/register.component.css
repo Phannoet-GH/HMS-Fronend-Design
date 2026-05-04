@@ -1,0 +1,81 @@
+.register-container {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(rgba(8, 11, 18, 0.82), rgba(8, 11, 18, 0.92)),
+    url("https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80");
+  background-size: cover;
+  background-position: center;
+}
+
+.register-card {
+  width: min(440px, 100%);
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.title {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.subtitle {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+form {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.error {
+  margin: 0;
+  color: var(--red);
+  font-size: 13px;
+}
+
+.footer-text {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.footer-text a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}

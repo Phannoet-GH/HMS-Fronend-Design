@@ -1,0 +1,74 @@
+<main class="guests-page">
+  <header class="topbar">
+    <div>
+      <h1>Guests</h1>
+      <p>Maintain guest profiles, contact details, and identification records.</p>
+    </div>
+    <div class="search-row">
+      <input name="search" placeholder="Search guests" [(ngModel)]="search" (keyup.enter)="loadGuests()" />
+      <button type="button" class="secondary" (click)="loadGuests()">Search</button>
+    </div>
+  </header>
+
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+
+  <section class="content-grid">
+    <form class="guest-form" (ngSubmit)="saveGuest()">
+      <h2>{{ selectedGuestId ? 'Edit Guest' : 'New Guest' }}</h2>
+
+      <label>
+        Full Name
+        <input name="fullName" [(ngModel)]="form.fullName" required />
+      </label>
+
+      <label>
+        Phone
+        <input name="phone" [(ngModel)]="form.phone" required />
+      </label>
+
+      <label>
+        Email
+        <input type="email" name="email" [(ngModel)]="form.email" />
+      </label>
+
+      <label>
+        ID Number
+        <input name="idNumber" [(ngModel)]="form.idNumber" />
+      </label>
+
+      <label>
+        Address
+        <textarea name="address" rows="3" [(ngModel)]="form.address"></textarea>
+      </label>
+
+      <div class="actions">
+        <button type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'Saving...' : selectedGuestId ? 'Update Guest' : 'Create Guest' }}
+        </button>
+        <button type="button" class="secondary" (click)="resetForm()">Clear</button>
+      </div>
+    </form>
+
+    <section class="guest-list">
+      <div class="list-header">
+        <h2>Guest Directory</h2>
+        <span class="badge">{{ guests.length }} records</span>
+      </div>
+
+      <p *ngIf="isLoading" class="muted">Loading guests...</p>
+      <p *ngIf="!isLoading && guests.length === 0" class="muted">No guests found.</p>
+
+      <div class="guest-card" *ngFor="let guest of guests">
+        <div>
+          <h3>{{ guest.fullName }}</h3>
+          <p>{{ guest.phone }} <span *ngIf="guest.email">· {{ guest.email }}</span></p>
+          <small *ngIf="guest.idNumber" class="mono">ID {{ guest.idNumber }}</small>
+        </div>
+        <div class="row-actions">
+          <button type="button" class="secondary" (click)="editGuest(guest)">Edit</button>
+          <button type="button" class="danger" (click)="deleteGuest(guest)">Delete</button>
+        </div>
+      </div>
+    </section>
+  </section>
+</main>

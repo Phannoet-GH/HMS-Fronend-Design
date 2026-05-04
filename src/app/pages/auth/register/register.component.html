@@ -1,0 +1,63 @@
+<div class="register-container">
+  <section class="register-card">
+    <span class="brand-mark">HS</span>
+    <h2 class="title">Create Account</h2>
+    <p class="subtitle">Choose a role and connect to the hotel workspace.</p>
+
+    <form (ngSubmit)="register()">
+      <label>
+        Username
+        <input
+          type="text"
+          name="username"
+          [(ngModel)]="form.username"
+          placeholder="Full name"
+          required
+        />
+      </label>
+
+      <label>
+        Email
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="form.email"
+          placeholder="name@hotel.com"
+          required
+        />
+      </label>
+
+      <label>
+        Password
+        <input
+          type="password"
+          name="password"
+          [(ngModel)]="form.password"
+          placeholder="Create password"
+          required
+        />
+      </label>
+
+      <label>
+        Role
+        <select name="roleId" [(ngModel)]="form.roleId">
+          <option value="r1">Admin</option>
+          <option value="r2">Reception</option>
+          <option value="r3">Housekeeping</option>
+          <option value="r5">Accountant</option>
+        </select>
+      </label>
+
+      <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Creating...' : 'Register' }}
+      </button>
+    </form>
+
+    <p class="footer-text">
+      Already have an account?
+      <a routerLink="/login">Login</a>
+    </p>
+  </section>
+</div>

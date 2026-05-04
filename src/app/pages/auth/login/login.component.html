@@ -1,0 +1,52 @@
+<div class="login-container">
+  <section class="auth-panel">
+    <div class="brand-block">
+      <span class="brand-mark">HS</span>
+      <div>
+        <h1>HotelSys</h1>
+        <p>Room operations, bookings, and staff workflows in one workspace.</p>
+      </div>
+    </div>
+
+    <dl class="auth-stats">
+      <div>
+        <dt>24/7</dt>
+        <dd>Front desk ready</dd>
+      </div>
+      <div>
+        <dt>Live</dt>
+        <dd>Room inventory</dd>
+      </div>
+    </dl>
+  </section>
+
+  <form class="login-card" (ngSubmit)="login()">
+    <h2 class="title">Hotel System</h2>
+    <p class="subtitle">Sign in to continue</p>
+
+    <label>
+      Email
+      <input type="email" name="email" placeholder="name@hotel.com" [(ngModel)]="form.email" required />
+    </label>
+
+    <label>
+      Password
+      <input type="password" name="password" placeholder="Enter password" [(ngModel)]="form.password" required />
+    </label>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+
+    <button type="submit" [disabled]="isSubmitting">
+      {{ isSubmitting ? 'Signing in...' : 'Login' }}
+    </button>
+
+    <button type="button" class="demo-button" (click)="useDemoAdmin()">
+      Use demo admin
+    </button>
+
+    <p class="switch-link">
+      Need an account?
+      <a routerLink="/register">Create one</a>
+    </p>
+  </form>
+</div>

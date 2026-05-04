@@ -1,0 +1,138 @@
+<link rel="stylesheet" href="./bookings.component.css">
+<main class="dashboard">
+
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Wednesday, 18 March 2026 · Grand Meridian Hotel</p>
+    </div>
+  </div>
+
+  <!-- Top Stats -->
+  <section class="stats-grid">
+    <div class="card stat green">
+      <p>Occupancy</p>
+      <h2>25%</h2>
+      <span>3/12 rooms</span>
+    </div>
+
+    <div class="card stat gold">
+      <p>Revenue (MTD)</p>
+      <h2>$1,137</h2>
+      <span>4 payments</span>
+    </div>
+
+    <div class="card stat blue">
+      <p>Available Rooms</p>
+      <h2>4</h2>
+      <span>Ready for check-in</span>
+    </div>
+
+    <div class="card stat purple">
+      <p>Active Bookings</p>
+      <h2>6</h2>
+      <span>Confirmed + checked-in</span>
+    </div>
+
+    <div class="card stat orange">
+      <p>Pending Services</p>
+      <h2>1</h2>
+      <span>Awaiting action</span>
+    </div>
+
+    <div class="card stat cyan">
+      <p>Staff On Site</p>
+      <h2>8</h2>
+      <span>5 departments</span>
+    </div>
+  </section>
+
+  <!-- Middle Section -->
+  <section class="grid-2">
+
+    <!-- Room Status -->
+    <div class="card">
+      <h3>Room Status Breakdown</h3>
+
+      <div class="progress">
+        <label>Available</label>
+        <div class="bar"><span style="width: 60%" class="green"></span></div>
+      </div>
+
+      <div class="progress">
+        <label>Reserved</label>
+        <div class="bar"><span style="width: 40%" class="purple"></span></div>
+      </div>
+
+      <div class="progress">
+        <label>Occupied</label>
+        <div class="bar"><span style="width: 40%" class="blue"></span></div>
+      </div>
+
+      <div class="progress">
+        <label>Maintenance</label>
+        <div class="bar"><span style="width: 20%" class="red"></span></div>
+      </div>
+
+      <div class="progress">
+        <label>Cleaning</label>
+        <div class="bar"><span style="width: 20%" class="orange"></span></div>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="card">
+      <h3>Recent Activity</h3>
+
+      <div class="activity">
+        <div>Check-in — Room 102</div>
+        <div>Check-in — Room 301</div>
+        <div>Booking — Room 101</div>
+        <div>Room Service — Room 301</div>
+        <div>Config Updated</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Table -->
+  <section class="card table-card">
+    <h3>Active Bookings</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Guest</th>
+          <th>Room</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Sophia Chen</td>
+          <td>102</td>
+          <td><span class="badge green">Checked In</span></td>
+        </tr>
+
+        <tr>
+          <td>2</td>
+          <td>Aiko Tanaka</td>
+          <td>301</td>
+          <td><span class="badge green">Checked In</span></td>
+        </tr>
+
+        <tr>
+          <td>3</td>
+          <td>Marcus Webb</td>
+          <td>101</td>
+          <td><span class="badge blue">Confirmed</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>

@@ -1,0 +1,204 @@
+<main class="dashboard-page">
+  <!-- Hero Section -->
+  <section class="hero-panel">
+    <div>
+      <span class="eyebrow">Grand Meridian Hotel</span>
+      <h1>Operations Dashboard</h1>
+      <p>Real-time analytics for rooms, bookings, occupancy, and revenue performance.</p>
+    </div>
+    <div class="hero-actions">
+      <a routerLink="/bookings" class="btn-primary">+ New Booking</a>
+      <a routerLink="/rooms" class="btn-secondary">Manage Rooms</a>
+    </div>
+  </section>
+
+  <!-- Error/Loading States -->
+  <p *ngIf="errorMessage" class="alert-error">{{ errorMessage }}</p>
+  <p *ngIf="isLoading" class="alert-loading">Loading dashboard metrics...</p>
+
+  <!-- Main Content (Hidden while loading) -->
+  <div *ngIf="!isLoading" class="dashboard-content">
+    
+    <!-- Primary Metrics (4 columns) -->
+    <section class="metrics-primary">
+      <app-stat-card 
+        label="Occupancy Rate" 
+        [value]="occupancyRate + '%'" 
+        [hint]="occupiedRooms + ' occupied, ' + availableRooms + ' available'" 
+        tone="accent">
+      </app-stat-card>
+      <app-stat-card 
+        label="Active Bookings" 
+        [value]="activeBookings" 
+        [hint]="todayCheckIns + ' check-in, ' + todayCheckOuts + ' check-out'" 
+        tone="purple">
+      </app-stat-card>
+      <app-stat-card 
+        label="Total Revenue" 
+        [value]="projectedRevenueLabel" 
+        [hint]="'Avg. $' + averageRoomPrice + '/night'" 
+        tone="gold">
+      </app-stat-card>
+      <app-stat-card 
+        label="Maintenance" 
+        [value]="maintenanceRooms" 
+        [hint]="reservedRooms + ' reserved'" 
+        tone="red">
+      </app-stat-card>
+    </section>
+
+    <!-- Secondary Metrics (2 columns) -->
+    <section class="metrics-secondary">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label">Total Rooms</span>
+          <span class="metric-value">{{ totalRooms }}</span>
+        </div>
+        <div class="metric-breakdown">
+          <div class="breakdown-item">
+            <span class="label">Available</span>
+            <span class="count success">{{ availableRooms }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="label">Occupied</span>
+            <span class="count warning">{{ occupiedRooms }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="label">Reserved</span>
+            <span class="count info">{{ reservedRooms }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="label">Maintenance</span>
+            <span class="count danger">{{ maintenanceRooms }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label">Today's Activity</span>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <span class="activity-icon">→</span>
+            <span class="activity-text">{{ todayCheckIns }} Check-ins Today</span>
+          </div>
+          <div class="activity-item">
+            <span class="activity-icon">←</span>
+            <span class="activity-text">{{ todayCheckOuts }} Check-outs Today</span>
+          </div>
+          <div class="activity-item">
+            <span class="activity-icon">📅</span>
+            <span class="activity-text">{{ totalBookings }} Total Bookings</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Section (2 columns) -->
+    <section class="charts-grid">
+      <article class="panel chart-panel">
+        <div class="panel-header">
+          <h2>Room Occupancy Overview</h2>
+        </div>
+        <div class="panel-content chart-content">
+          <app-occupancy-chart 
+            [occupied]="occupiedRooms"
+            [available]="availableRooms"
+            [maintenance]="maintenanceRooms"
+            [reserved]="reservedRooms">
+          </app-occupancy-chart>
+        </div>
+      </article>
+
+      <article class="panel chart-panel">
+        <div class="panel-header">
+          <h2>7-Day Revenue Trend</h2>
+        </div>
+        <div class="panel-content chart-content">
+          <app-revenue-chart 
+            [revenueData]="revenueChartData"
+            [labels]="revenueChartLabels">
+          </app-revenue-chart>
+        </div>
+      </article>
+    </section>
+
+    <!-- Main Panels (2 columns) -->
+    <section class="panels-grid">
+      <!-- Room Status Panel -->
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Room Status Overview</h2>
+          <a routerLink="/rooms" class="link-action">View All</a>
+        </div>
+        <div class="panel-content">
+          <div class="status-list">
+            <div *ngFor="let room of roomStatusList" class="status-item">
+              <div class="room-info">
+                <span class="room-number">{{ room.roomNumber }}</span>
+                <span class="room-type">{{ room.type }}</span>
+              </div>
+              <span [ngClass]="getStatusBadgeClass(room.status)" class="badge">
+                {{ room.status | titlecase }}
+              </span>
+            </div>
+          </div>
+          <p *ngIf="rooms.length === 0" class="muted">No rooms added yet.</p>
+        </div>
+        <div class="panel-footer">
+          <a routerLink="/rooms" class="btn-link">Manage All Rooms →</a>
+        </div>
+      </article>
+
+      <!-- Recent Bookings Panel -->
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Recent Bookings</h2>
+          <a routerLink="/bookings" class="link-action">View All</a>
+        </div>
+        <div class="panel-content">
+          <div class="booking-list">
+            <div *ngFor="let booking of recentBookings" class="booking-item">
+              <div class="booking-guest">
+                <strong>{{ booking.guest.fullName }}</strong>
+                <small>Room {{ booking.room.roomNumber }}</small>
+              </div>
+              <div class="booking-details">
+                <span [ngClass]="getBookingStatusBadgeClass(booking.status)" class="badge">
+                  {{ booking.status | titlecase }}
+                </span>
+                <span class="amount">{{ booking.totalAmount | currency }}</span>
+              </div>
+            </div>
+          </div>
+          <p *ngIf="recentBookings.length === 0" class="muted">No bookings recorded yet.</p>
+        </div>
+        <div class="panel-footer">
+          <a routerLink="/bookings" class="btn-link">View All Bookings →</a>
+        </div>
+      </article>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <a routerLink="/bookings" class="action-card">
+        <span class="action-icon">📝</span>
+        <span class="action-label">Create Booking</span>
+      </a>
+      <a routerLink="/rooms" class="action-card">
+        <span class="action-icon">🏨</span>
+        <span class="action-label">Manage Rooms</span>
+      </a>
+      <a routerLink="/guests" class="action-card">
+        <span class="action-icon">👥</span>
+        <span class="action-label">Guest List</span>
+      </a>
+      <a routerLink="/dashboard" class="action-card">
+        <span class="action-icon">📊</span>
+        <span class="action-label">Reports</span>
+      </a>
+    </section>
+
+  </div>
+</main>

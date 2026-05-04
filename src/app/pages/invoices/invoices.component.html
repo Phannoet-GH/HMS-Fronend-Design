@@ -1,0 +1,112 @@
+<main class="invoices-page">
+  <!-- Header Section -->
+  <section class="page-header">
+    <div>
+      <h1>Invoices Management</h1>
+      <p>Track and manage all customer invoices and payments</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/bookings" class="btn-primary">+ Create from Booking</a>
+    </div>
+  </section>
+
+  <!-- Alert Messages -->
+  <p *ngIf="errorMessage" class="alert-error">{{ errorMessage }}</p>
+  <p *ngIf="successMessage" class="alert-success">{{ successMessage }}</p>
+
+  <!-- Summary Cards -->
+  <section class="summary-cards" *ngIf="!isLoading && invoices.length > 0">
+    <div class="summary-card">
+      <span class="label">Total Invoices</span>
+      <span class="value">{{ invoices.length }}</span>
+    </div>
+    <div class="summary-card">
+      <span class="label">Total Amount</span>
+      <span class="value">{{ getTotalAmount() | currency }}</span>
+    </div>
+    <div class="summary-card">
+      <span class="label">Total Paid</span>
+      <span class="value">{{ getTotalPaid() | currency }}</span>
+    </div>
+    <div class="summary-card">
+      <span class="label">Outstanding</span>
+      <span class="value">{{ (getTotalAmount() - getTotalPaid()) | currency }}</span>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <p class="muted">Loading invoices...</p>
+  </div>
+
+  <!-- Filters Section -->
+  <section class="filters-section" *ngIf="!isLoading && invoices.length > 0">
+    <div class="filter-group">
+      <label for="statusFilter">Filter by Status:</label>
+      <select id="statusFilter" [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
+        <option value="all">All Invoices</option>
+        <option value="draft">Draft</option>
+        <option value="issued">Issued</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="paid">Paid</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Invoices Table -->
+  <section class="invoices-section" *ngIf="!isLoading && invoices.length > 0">
+    <div class="table-wrapper">
+      <table class="invoices-table">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Guest Name</th>
+            <th>Booking Dates</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Issue Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let invoice of invoices" class="invoice-row">
+            <td class="invoice-number">{{ invoice.invoiceNumber }}</td>
+            <td>{{ invoice.guest.fullName }}</td>
+            <td class="dates">
+              {{ invoice.checkInDate | date: 'short' }} - {{ invoice.checkOutDate | date: 'short' }}
+            </td>
+            <td class="amount">{{ invoice.totalAmount | currency }}</td>
+            <td>
+              <span [ngClass]="getStatusBadgeClass(invoice.status)" class="badge">
+                {{ invoice.status | titlecase }}
+              </span>
+            </td>
+            <td>{{ invoice.issueDate | date: 'short' }}</td>
+            <td class="actions">
+              <button *ngIf="invoice.status === 'draft'" (click)="markAsIssued(invoice._id)" class="btn-sm btn-info" title="Issue Invoice">
+                Issue
+              </button>
+              <button *ngIf="invoice.status === 'issued' || invoice.status === 'unpaid'" (click)="markAsPaid(invoice._id)" class="btn-sm btn-success" title="Mark as Paid">
+                Mark Paid
+              </button>
+              <button *ngIf="invoice.status === 'draft'" (click)="deleteInvoice(invoice._id)" class="btn-sm btn-danger" title="Delete Invoice">
+                Delete
+              </button>
+              <a [routerLink]="['/invoices', invoice._id]" class="btn-sm btn-view">View</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Empty State -->
+  <section class="empty-state" *ngIf="!isLoading && invoices.length === 0">
+    <div class="empty-content">
+      <h3>No invoices found</h3>
+      <p>Start by creating an invoice from a booking to get started.</p>
+      <a routerLink="/bookings" class="btn-primary">Create Invoice</a>
+    </div>
+  </section>
+</main>

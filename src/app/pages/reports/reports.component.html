@@ -1,0 +1,140 @@
+<main class="reports-page">
+  <!-- Header Section -->
+  <section class="page-header">
+    <div>
+      <h1>Reports & Analytics</h1>
+      <p>Comprehensive business insights and performance metrics</p>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <p class="muted">Loading reports...</p>
+  </div>
+
+  <!-- Reports Content -->
+  <div *ngIf="!isLoading" class="reports-content">
+    
+    <!-- Key Metrics Section -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-icon">📊</span>
+        <div class="metric-info">
+          <span class="label">Total Bookings</span>
+          <span class="value">{{ totalBookings }}</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">📈</span>
+        <div class="metric-info">
+          <span class="label">Total Revenue</span>
+          <span class="value">{{ totalRevenue | currency }}</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🏨</span>
+        <div class="metric-info">
+          <span class="label">Room Utilization</span>
+          <span class="value">{{ roomUtilizationRate }}%</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">⏱️</span>
+        <div class="metric-info">
+          <span class="label">Avg. Stay Duration</span>
+          <span class="value">{{ averageStayDuration }} nights</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Secondary Metrics -->
+    <section class="secondary-metrics">
+      <div class="metric-card-small">
+        <span class="label">Revenue per Booking</span>
+        <span class="value">{{ averageRevenuePerBooking | currency }}</span>
+      </div>
+      <div class="metric-card-small">
+        <span class="label">Cancellation Rate</span>
+        <span class="value">{{ cancelledBookingsRate }}%</span>
+      </div>
+      <div class="metric-card-small">
+        <span class="label">Outstanding Invoices</span>
+        <span class="value">{{ outstandingInvoices | currency }}</span>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section class="charts-grid">
+      <!-- Occupancy Trend Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>30-Day Occupancy Trend</h3>
+        </div>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [type]="occupancyTrendChart.type"
+            [data]="occupancyTrendChart.data"
+            [options]="occupancyTrendChart.options">
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Revenue by Month Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>12-Month Revenue</h3>
+        </div>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [type]="revenueByMonthChart.type"
+            [data]="revenueByMonthChart.data"
+            [options]="revenueByMonthChart.options">
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Booking Status Distribution -->
+      <div class="chart-card chart-full">
+        <div class="chart-header">
+          <h3>Booking Status Distribution</h3>
+        </div>
+        <div class="chart-container chart-small">
+          <canvas
+            baseChart
+            [type]="bookingStatusChart.type"
+            [data]="bookingStatusChart.data"
+            [options]="bookingStatusChart.options">
+          </canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Section -->
+    <section class="summary-section">
+      <div class="summary-card">
+        <h3>Performance Summary</h3>
+        <ul class="summary-list">
+          <li><span>Total Bookings This Period:</span> <strong>{{ totalBookings }}</strong></li>
+          <li><span>Average Room Occupancy:</span> <strong>{{ roomUtilizationRate }}%</strong></li>
+          <li><span>Total Revenue Generated:</span> <strong>{{ totalRevenue | currency }}</strong></li>
+          <li><span>Average Stay Duration:</span> <strong>{{ averageStayDuration }} nights</strong></li>
+          <li><span>Revenue per Booking:</span> <strong>{{ averageRevenuePerBooking | currency }}</strong></li>
+          <li><span>Cancellation Rate:</span> <strong>{{ cancelledBookingsRate }}%</strong></li>
+        </ul>
+      </div>
+
+      <div class="summary-card">
+        <h3>Financial Overview</h3>
+        <ul class="summary-list">
+          <li><span>Total Invoices:</span> <strong>{{ invoices.length }}</strong></li>
+          <li><span>Paid Invoices:</span> <strong>{{ (invoices | slice:0:(invoices.length)).length }}</strong></li>
+          <li><span>Outstanding Amount:</span> <strong>{{ outstandingInvoices | currency }}</strong></li>
+          <li><span>Total Revenue:</span> <strong>{{ totalRevenue | currency }}</strong></li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+</main>

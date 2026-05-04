@@ -1,0 +1,116 @@
+<main class="rooms-page">
+  <header class="topbar">
+    <div>
+      <h1>Rooms</h1>
+      <p>Manage room inventory, nightly rates, and room status.</p>
+    </div>
+  </header>
+
+  <section class="summary-grid" aria-label="Room summary">
+    <article class="summary-item">
+      <span>Total Rooms</span>
+      <strong>{{ rooms.length }}</strong>
+    </article>
+    <article class="summary-item available-card">
+      <span>Available</span>
+      <strong>{{ availableCount }}</strong>
+    </article>
+    <article class="summary-item occupied-card">
+      <span>Reserved or Occupied</span>
+      <strong>{{ occupiedCount }}</strong>
+    </article>
+    <article class="summary-item maintenance-card">
+      <span>Maintenance</span>
+      <strong>{{ maintenanceCount }}</strong>
+    </article>
+  </section>
+
+  <section class="content-grid">
+    <form class="room-form" (ngSubmit)="saveRoom()">
+      <h2>{{ selectedRoomId ? 'Edit Room' : 'Create Room' }}</h2>
+
+      <label>
+        Room Number
+        <input name="roomNumber" [(ngModel)]="form.roomNumber" required />
+      </label>
+
+      <label>
+        Type
+        <select name="type" [(ngModel)]="form.type">
+          <option *ngFor="let type of roomTypes" [value]="type">{{ type }}</option>
+        </select>
+      </label>
+
+      <label>
+        Price Per Night
+        <input name="pricePerNight" type="number" min="0" [(ngModel)]="form.pricePerNight" required />
+      </label>
+
+      <label>
+        Capacity
+        <input name="capacity" type="number" min="1" [(ngModel)]="form.capacity" required />
+      </label>
+
+      <label>
+        Status
+        <select name="status" [(ngModel)]="form.status">
+          <option *ngFor="let status of roomStatuses" [value]="status">{{ status }}</option>
+        </select>
+      </label>
+
+      <label>
+        Description
+        <textarea name="description" rows="3" [(ngModel)]="form.description"></textarea>
+      </label>
+
+      <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+
+      <div class="actions">
+        <button type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'Saving...' : selectedRoomId ? 'Update Room' : 'Create Room' }}
+        </button>
+        <button type="button" class="secondary" (click)="resetForm()">Clear</button>
+      </div>
+    </form>
+
+    <section class="room-list">
+      <div class="list-header">
+        <h2>Room List</h2>
+        <button type="button" class="secondary" (click)="loadRooms()">Refresh</button>
+      </div>
+
+      <p *ngIf="isLoading" class="muted">Loading rooms...</p>
+      <p *ngIf="!isLoading && rooms.length === 0" class="muted">No rooms yet.</p>
+
+      <div class="table-wrap" *ngIf="!isLoading && rooms.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th>Type</th>
+              <th>Capacity</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let room of rooms">
+              <td>{{ room.roomNumber }}</td>
+              <td>{{ room.type }}</td>
+              <td>{{ room.capacity }}</td>
+              <td>{{ room.pricePerNight | currency }}</td>
+              <td>
+                <span class="status" [class]="room.status">{{ room.status }}</span>
+              </td>
+              <td class="row-actions">
+                <button type="button" class="secondary" (click)="editRoom(room)">Edit</button>
+                <button type="button" class="danger" (click)="deleteRoom(room)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</main>

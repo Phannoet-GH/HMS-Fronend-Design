@@ -1,0 +1,154 @@
+.login-container {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) 420px;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  padding: 32px;
+  background: var(--bg);
+}
+
+.auth-panel {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 34px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    linear-gradient(rgba(8, 11, 18, 0.7), rgba(8, 11, 18, 0.86)),
+    url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80");
+  background-size: cover;
+  background-position: center;
+  color: var(--text);
+}
+
+.brand-block {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.brand-block h1 {
+  margin: 0 0 8px;
+  font-size: 34px;
+}
+
+.brand-block p {
+  max-width: 360px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.auth-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin: 0;
+}
+
+.auth-stats div {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(13, 17, 23, 0.72);
+}
+
+.auth-stats dt {
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.auth-stats dd {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.login-card {
+  width: 100%;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.title {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin-bottom: 25px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+button {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.demo-button {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+}
+
+.error {
+  margin: 10px 0 0;
+  color: var(--red);
+  font-size: 13px;
+}
+
+.switch-link {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.switch-link a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .login-container {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .auth-panel {
+    min-height: 280px;
+  }
+}
