@@ -1,31 +1,56 @@
 <div class="sidebar">
-  <div class="logo">
-    <h2>HotelSys</h2>
-    <p>Grand Meridian</p>
-  </div>
 
-  <div class="nav">
-    <div *ngFor="let group of navItems" class="group">
-      <p class="group-title">{{ group.label }}</p>
+  <!-- LOGO -->
+  <div>
+    <div class="logo">
+      <h3>Hotel Management</h3>
+      <p>Grand Meridian</p>
+    </div>
 
-      <a
-        *ngFor="let item of group.items"
-        [routerLink]="['/', item.id]"
-        routerLinkActive="active"
-        class="nav-item"
-      >
-        <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
-        <span>{{ item.label }}</span>
-      </a>
+    <!-- NAV -->
+    <div class="menu">
+
+      <div class="nav">
+
+        <div *ngFor="let group of navItems" class="group">
+
+          <p class="group-title">
+            {{ group.label }}
+          </p>
+
+          <a *ngFor="let item of group.items" [routerLink]="['/', item.id]" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">
+              {{ item.icon }}
+            </span>
+
+            <span>
+              {{ item.label }}
+            </span>
+          </a>
+
+        </div>
+      </div>
+
     </div>
   </div>
 
+  <!-- USER -->
   <div class="user">
+
     <div class="info">
-      <strong>{{ currentUser?.username || 'User' }}</strong>
-      <small>{{ roleName }}</small>
+      <strong>
+        {{ currentUser.username }}
+      </strong>
+
+      <small>
+        {{ roleName }}
+      </small>
     </div>
 
-    <button type="button" (click)="logout()">Logout</button>
+    <button (click)="logout()">
+      Sign Out
+    </button>
+
   </div>
+
 </div>

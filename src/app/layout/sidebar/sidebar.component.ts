@@ -1,88 +1,148 @@
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
-import { NAV_GROUPS } from './sidebar.config';
-
-type NavItem = {
-  id: string;
-  icon: string;
-  label: string;
-};
-
-type NavGroup = {
-  label: string;
-  items: NavItem[];
-};
-
-type CurrentUser = {
-  username?: string;
-  roleId?: string;
-};
-
+import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.css'
+  styleUrls: ['./sidebar.component.css'],
+  imports: [CommonModule, RouterLink]
 })
-export class SidebarComponent implements OnInit {
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
+export class SidebarComponent {
 
-  @Input() currentUser: CurrentUser | null = null;
+  roleName = 'Super Admin';
 
-  navItems: NavGroup[] = [];
+  currentUser = {
+    username: 'Priya Nair'
+  };
 
-  ngOnInit() {
-    this.setRoleMenu();
-  }
-
-  setRoleMenu() {
-    const roleId = this.currentUser?.roleId;
-
-    if (roleId === 'r3') {
-      this.navItems = [
+  navItems = [
+    {
+      label: 'Operations',
+      items: [
         {
-          label: 'Operations',
-          items: [
-            { id: 'dashboard', icon: 'DB', label: 'Dashboard' },
-            { id: 'rooms', icon: 'RM', label: 'Rooms' }
-          ]
-        }
-      ];
-    }
-    else if (roleId === 'r2') {
-      this.navItems = [
+          id: 'dashboard',
+          label: 'Dashboard',
+          icon: '◈'
+        },
         {
-          label: 'Operations',
-          items: [
-            { id: 'dashboard', icon: 'DB', label: 'Dashboard' },
-            { id: 'bookings', icon: 'BK', label: 'Bookings' },
-            { id: 'rooms', icon: 'RM', label: 'Rooms' },
-            { id: 'guests', icon: 'GS', label: 'Guests' }
-          ]
+          id: 'rooms',
+          label: 'Rooms',
+          icon: '▣'
+        },
+        {
+          id: 'checkin',
+          label: 'Check In',
+          icon: '↓'
+        },
+        {
+          id: 'checkout',
+          label: 'Check Out',
+          icon: '↑'
+        },
+        {
+          id: 'bookings',
+          label: 'Bookings',
+          icon: '◎'
+        },
+        {
+          id: 'room-services',
+          label: 'Room Services',
+          icon: '◆'
+        },
+        {
+          id: 'service-requests',
+          label: 'Service Requests',
+          icon: '◇'
         }
-      ];
+      ]
+    },
+
+    {
+      label: 'Finance',
+      items: [
+        {
+          id: 'invoices',
+          label: 'Invoices',
+          icon: '◈'
+        },
+        {
+          id: 'payments',
+          label: 'Payments',
+          icon: '○'
+        }
+      ]
+    },
+
+    {
+      label: 'Guests & Staff',
+      items: [
+        {
+          id: 'guests',
+          label: 'Guests',
+          icon: '◉'
+        },
+        {
+          id: 'employees',
+          label: 'Employees',
+          icon: '▤'
+        },
+        {
+          id: 'departments',
+          label: 'Departments',
+          icon: '◌'
+        }
+      ]
+    },
+
+    {
+      label: 'Supply Chain',
+      items: [
+        {
+          id: 'inventory',
+          label: 'Inventory',
+          icon: '▦'
+        },
+        {
+          id: 'suppliers',
+          label: 'Suppliers',
+          icon: '△'
+        },
+        {
+          id: 'purchase-orders',
+          label: 'Purchase Orders',
+          icon: '◩'
+        }
+      ]
+    },
+
+    {
+      label: 'Admin',
+      items: [
+        {
+          id: 'users',
+          label: 'Users',
+          icon: '○'
+        },
+        {
+          id: 'roles',
+          label: 'Roles & Permissions',
+          icon: '◈'
+        },
+        {
+          id: 'reports',
+          label: 'Reports',
+          icon: '▥'
+        },
+        {
+          id: 'activity-logs',
+          label: 'Activity Logs',
+          icon: '◫'
+        }
+      ]
     }
-    else {
-      this.navItems = NAV_GROUPS;
-    }
-  }
+  ];
 
   logout() {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
-
-  get roleName() {
-    const roleMap: Record<string, string> = {
-      r1: 'Admin',
-      r2: 'Reception',
-      r3: 'Housekeeping',
-      r5: 'Accountant'
-    };
-
-    return roleMap[this.currentUser?.roleId || ''] || 'User';
+    console.log('Logout');
   }
 }
