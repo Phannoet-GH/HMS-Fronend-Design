@@ -3,9 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Booking, BookingService } from '../../core/services/booking.service';
 import { Room, RoomService } from '../../core/services/room.service';
-import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
-import { OccupancyChartComponent } from '../../shared/components/occupancy-chart/occupancy-chart.component';
-import { RevenueChartComponent } from '../../shared/components/revenue-chart/revenue-chart.component';
+import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
+import { OccupancyChartComponent } from '../../shared/occupancy-chart/occupancy-chart.component';
+import { RevenueChartComponent } from '../../shared/revenue-chart/revenue-chart.component';
 
 @Component({
   selector: 'app-dashboard',

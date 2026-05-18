@@ -116,11 +116,67 @@ button {
   margin-top: 15px;
 }
 
+.demo-buttons {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.demo-title {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .demo-button {
-  margin-top: 10px;
+  margin-top: 8px;
+  padding: 10px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.demo-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 193, 7, 0.05);
+}
+
+.demo-button.admin:hover {
+  border-color: #ff4444;
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.05);
+}
+
+.demo-button.reception:hover {
+  border-color: #44aaff;
+  color: #44aaff;
+  background: rgba(68, 170, 255, 0.05);
+}
+
+.demo-button.housekeeping:hover {
+  border-color: #44ff88;
+  color: #44ff88;
+  background: rgba(68, 255, 136, 0.05);
+}
+
+.demo-button.accountant:hover {
+  border-color: #ffaa44;
+  color: #ffaa44;
+  background: rgba(255, 170, 68, 0.05);
+}
+
+.demo-button.guest:hover {
+  border-color: #aa44ff;
+  color: #aa44ff;
+  background: rgba(170, 68, 255, 0.05);
 }
 
 .error {

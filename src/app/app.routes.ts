@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/auth/register/register.component';
 import { RoomsComponent } from './pages/rooms/rooms.component';
+import { CheckInComponent } from './pages/check-in/check-in.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { BookingsComponent } from './pages/bookings/bookings.component';
 import { GuestsComponent } from './pages/guests/guests.component';
@@ -9,6 +10,18 @@ import { InvoicesComponent } from './pages/invoices/invoices.component';
 import { ReportsComponent } from './pages/reports/reports.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
 import { AuthGuard } from './core/guards/auth.guard';
+import { CheckoutComponent } from './pages/checkout/checkout.component';
+import { RoomServicesComponent } from './pages/room-services/room-services.component';
+import { ServiceRequestsComponent } from './pages/service-requests/service-requests.component';
+import { PaymentsComponent } from './pages/payments/payments.component';
+import { EmployeesComponent } from './pages/employees/employees.component';
+import { DepartmentsComponent } from './pages/departments/departments.component';
+import { InventoryComponent } from './pages/inventory/inventory.component';
+import { SuppliersComponent } from './pages/suppliers/suppliers.component';
+import { PurchaseOrdersComponent } from './pages/purchase-orders/purchase-orders.component';
+import { UsersComponent } from './pages/users/users.component';
+import { RolesComponent } from './pages/roles/roles.component';
+import { ActivityLogsComponent } from './pages/activity-logs/activity-logs.component';
 
 export const routes: Routes = [
 
@@ -53,12 +66,17 @@ export const routes: Routes = [
 
       {
         path: 'checkin',
-        component: DashboardComponent
+        component: CheckInComponent
+      },
+
+      {
+        path: 'check-in',
+        component: CheckInComponent
       },
 
       {
         path: 'checkout',
-        component: DashboardComponent
+        component: CheckoutComponent
       },
 
       {
@@ -68,12 +86,12 @@ export const routes: Routes = [
 
       {
         path: 'room-services',
-        component: DashboardComponent
+        component: RoomServicesComponent
       },
 
       {
         path: 'service-requests',
-        component: DashboardComponent
+        component: ServiceRequestsComponent
       },
 
       /* FINANCE */
@@ -85,7 +103,7 @@ export const routes: Routes = [
 
       {
         path: 'payments',
-        component: DashboardComponent
+        component: PaymentsComponent
       },
 
       /* GUESTS & STAFF */
@@ -97,41 +115,41 @@ export const routes: Routes = [
 
       {
         path: 'employees',
-        component: DashboardComponent
+        component: EmployeesComponent
       },
 
       {
         path: 'departments',
-        component: DashboardComponent
+        component: DepartmentsComponent
       },
 
       /* SUPPLY CHAIN */
 
       {
         path: 'inventory',
-        component: DashboardComponent
+        component: InventoryComponent
       },
 
       {
         path: 'suppliers',
-        component: DashboardComponent
+        component: SuppliersComponent
       },
 
       {
         path: 'purchase-orders',
-        component: DashboardComponent
+        component: PurchaseOrdersComponent
       },
 
       /* ADMIN */
 
       {
         path: 'users',
-        component: DashboardComponent
+        component: UsersComponent
       },
 
       {
         path: 'roles',
-        component: DashboardComponent
+        component: RolesComponent
       },
 
       {
@@ -141,7 +159,7 @@ export const routes: Routes = [
 
       {
         path: 'activity-logs',
-        component: DashboardComponent
+        component: ActivityLogsComponent
       }
 
     ]

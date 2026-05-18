@@ -61,7 +61,7 @@
       <div class="guest-card" *ngFor="let guest of guests">
         <div>
           <h3>{{ guest.fullName }}</h3>
-          <p>{{ guest.phone }} <span *ngIf="guest.email">· {{ guest.email }}</span></p>
+          <p>{{ guest.phone }} <span *ngIf="guest.email">- {{ guest.email }}</span></p>
           <small *ngIf="guest.idNumber" class="mono">ID {{ guest.idNumber }}</small>
         </div>
         <div class="row-actions">

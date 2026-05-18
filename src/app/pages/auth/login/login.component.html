@@ -40,9 +40,24 @@
       {{ isSubmitting ? 'Signing in...' : 'Login' }}
     </button>
 
-    <button type="button" class="demo-button" (click)="useDemoAdmin()">
-      Use demo admin
-    </button>
+    <div class="demo-buttons">
+      <p class="demo-title">Demo Accounts:</p>
+      <button type="button" class="demo-button admin" (click)="useDemoAdmin()" title="Admin - Full system access">
+        🔑 Admin
+      </button>
+      <button type="button" class="demo-button reception" (click)="useDemoReception()" title="Reception - Booking & check-in/out">
+        👤 Reception
+      </button>
+      <button type="button" class="demo-button housekeeping" (click)="useDemoHousekeeping()" title="Housekeeping - Room maintenance">
+        🧹 Housekeeping
+      </button>
+      <button type="button" class="demo-button accountant" (click)="useDemoAccountant()" title="Accountant - Financial management">
+        💰 Accountant
+      </button>
+      <button type="button" class="demo-button guest" (click)="useDemoGuest()" title="Guest - View bookings">
+        👨 Guest
+      </button>
+    </div>
 
     <p class="switch-link">
       Need an account?

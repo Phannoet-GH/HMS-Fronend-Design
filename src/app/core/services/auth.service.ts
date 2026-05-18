@@ -45,18 +45,35 @@ export class AuthService {
     return !!this.getToken();
   }
 
-  getCurrentUser(): Pick<AuthUser, 'username' | 'roleId'> | null {
+  getCurrentUser(): AuthUser | null {
     const token = this.getToken();
     if (!token) return null;
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
-        username: payload.email || 'User',
-        roleId: payload.roleId
+        _id: payload.id || '',
+        username: payload.email || payload.username || 'User',
+        email: payload.email || '',
+        roleId: payload.roleId || payload.role || 'r4'
       };
     } catch {
       return null;
     }
+  }
+
+  getUserRole(): string | null {
+    const user = this.getCurrentUser();
+    return user?.roleId || null;
+  }
+
+  isRole(roleId: string | string[]): boolean {
+    const userRole = this.getUserRole();
+    if (!userRole) return false;
+    
+    if (Array.isArray(roleId)) {
+      return roleId.includes(userRole);
+    }
+    return userRole === roleId;
   }
 }

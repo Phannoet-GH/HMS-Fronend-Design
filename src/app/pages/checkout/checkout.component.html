@@ -1,0 +1,200 @@
+<main class="checkout-page">
+  <header class="page-header">
+    <div>
+      <h1>Guest Check-Out</h1>
+      <p>Settle bills, generate invoices, and release occupied rooms.</p>
+    </div>
+
+    <button class="secondary" type="button" (click)="loadData()" [disabled]="isLoading">
+      {{ isLoading ? 'Loading...' : 'Refresh' }}
+    </button>
+  </header>
+
+  <section class="summary-grid" aria-label="Checkout summary">
+    <article class="summary-card due-card">
+      <span>Due Today</span>
+      <strong>{{ dueTodayCount }}</strong>
+    </article>
+    <article class="summary-card paid-card">
+      <span>Settled</span>
+      <strong>{{ recentCheckOuts.length }}</strong>
+    </article>
+    <article class="summary-card pending-card">
+      <span>Active Stays</span>
+      <strong>{{ activeBookings.length }}</strong>
+    </article>
+    <article class="summary-card cleaning-card">
+      <span>Selected Total</span>
+      <strong>{{ totalAmount | currency }}</strong>
+    </article>
+  </section>
+
+  <section class="checkout-grid">
+    <article class="panel lookup-panel">
+      <div class="panel-header">
+        <h2>Active Stay</h2>
+        <span class="status-pill checked-in" *ngIf="selectedBooking">Checked In</span>
+      </div>
+
+      <form class="checkout-form" (ngSubmit)="completeCheckOut()">
+        <label class="wide">
+          Search Guest or Room
+          <input name="searchTerm" type="text" placeholder="Guest name, booking ID, or room number" [(ngModel)]="searchTerm" />
+        </label>
+
+        <label>
+          Select Active Booking
+          <select name="selectedBookingId" [(ngModel)]="selectedBookingId" required>
+            <option value="">Select checked-in guest</option>
+            <option *ngFor="let booking of filteredBookings" [value]="booking._id">
+              {{ booking.guest.fullName }} - Room {{ booking.room.roomNumber }}
+            </option>
+          </select>
+        </label>
+
+        <div class="form-grid">
+          <label>
+            Guest Name
+            <input type="text" [value]="selectedBooking?.guest?.fullName || ''" readonly />
+          </label>
+
+          <label>
+            Room
+            <input
+              type="text"
+              [value]="selectedBooking ? selectedBooking.room.roomNumber + ' - ' + selectedBooking.room.type : ''"
+              readonly
+            />
+          </label>
+
+          <label>
+            Check-In Date
+            <input type="text" [value]="selectedBooking ? (selectedBooking.checkInDate | date: 'dd MMM yyyy') : ''" readonly />
+          </label>
+
+          <label>
+            Check-Out Date
+            <input type="text" [value]="selectedBooking ? (selectedBooking.checkOutDate | date: 'dd MMM yyyy') : ''" readonly />
+          </label>
+
+          <label>
+            Room Condition
+            <select name="roomCondition" [(ngModel)]="roomCondition">
+              <option>Ready for cleaning</option>
+              <option>Needs maintenance</option>
+              <option>Lost item found</option>
+            </select>
+          </label>
+
+          <label>
+            Payment Method
+            <select name="paymentMethod" [(ngModel)]="paymentMethod">
+              <option>Credit Card</option>
+              <option>Cash</option>
+              <option>Bank Transfer</option>
+            </select>
+          </label>
+
+          <label>
+            Service Charges
+            <input name="serviceCharge" type="number" min="0" [(ngModel)]="serviceCharge" />
+          </label>
+
+          <label>
+            Tax Percentage
+            <input name="taxPercentage" type="number" min="0" [(ngModel)]="taxPercentage" />
+          </label>
+        </div>
+
+        <label class="wide">
+          Notes
+          <textarea name="notes" rows="4" placeholder="Room inspection notes or guest feedback" [(ngModel)]="notes"></textarea>
+        </label>
+
+        <p *ngIf="errorMessage" class="message error">{{ errorMessage }}</p>
+        <p *ngIf="successMessage" class="message success-text">{{ successMessage }}</p>
+
+        <div class="checkout-actions">
+          <button type="submit" [disabled]="isSaving || !selectedBooking">
+            {{ isSaving ? 'Checking Out...' : 'Complete Check-Out' }}
+          </button>
+          <button class="secondary" type="button" (click)="resetForm()">Clear</button>
+        </div>
+      </form>
+    </article>
+
+    <aside class="panel bill-panel">
+      <div class="panel-header">
+        <h2>Billing Summary</h2>
+      </div>
+
+      <div class="guest-card">
+        <span>Booking ID</span>
+        <strong>{{ selectedBooking?._id || 'Not selected' }}</strong>
+        <p *ngIf="selectedBooking">
+          {{ totalNights }} nights in {{ selectedBooking.room.type }}, room {{ selectedBooking.room.roomNumber }}
+        </p>
+      </div>
+
+      <div class="billing-list">
+        <div class="billing-item">
+          <span>Room Charges</span>
+          <strong>{{ roomCharges | currency }}</strong>
+        </div>
+
+        <div class="billing-item">
+          <span>Service Charges</span>
+          <strong>{{ serviceCharge | currency }}</strong>
+        </div>
+
+        <div class="billing-item">
+          <span>Tax</span>
+          <strong>{{ taxAmount | currency }}</strong>
+        </div>
+
+        <div class="billing-item total-row">
+          <span>Total Amount</span>
+          <strong>{{ totalAmount | currency }}</strong>
+        </div>
+      </div>
+
+      <div class="status-box paid">
+        {{ selectedBooking ? 'Invoice will be created and marked paid' : 'Select a checked-in stay to settle' }}
+      </div>
+    </aside>
+  </section>
+
+  <section class="recent-checkouts panel">
+    <div class="section-header">
+      <h2>Recent Check-Outs</h2>
+    </div>
+
+    <p *ngIf="!isLoading && recentCheckOuts.length === 0" class="muted">No paid check-out invoices yet.</p>
+
+    <div class="table-wrapper" *ngIf="recentCheckOuts.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Guest</th>
+            <th>Room</th>
+            <th>Total</th>
+            <th>Date</th>
+            <th>Payment</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let invoice of recentCheckOuts">
+            <td>{{ invoice.guest.fullName }}</td>
+            <td>{{ invoice.room.roomNumber }}</td>
+            <td>{{ invoice.totalAmount | currency }}</td>
+            <td>{{ invoice.paymentDate || invoice.updatedAt | date: 'dd MMM yyyy' }}</td>
+            <td>{{ invoice.paymentMethod || 'Paid' }}</td>
+            <td><span class="status-pill completed">Completed</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>

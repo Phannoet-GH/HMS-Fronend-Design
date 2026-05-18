@@ -37,8 +37,18 @@ export class BookingService {
 
   constructor(private http: HttpClient) {}
 
-  getBookings() {
-    return this.http.get<ApiResponse<Booking[]>>(this.baseUrl);
+  getBookings(filters?: { status?: string; room?: string }) {
+    let url = this.baseUrl;
+
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.status) params.append('status', filters.status);
+      if (filters.room) params.append('room', filters.room);
+      const queryString = params.toString();
+      if (queryString) url += '?' + queryString;
+    }
+
+    return this.http.get<ApiResponse<Booking[]>>(url);
   }
 
   createBooking(data: BookingPayload) {

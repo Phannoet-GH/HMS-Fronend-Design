@@ -1,138 +1,136 @@
-<link rel="stylesheet" href="./bookings.component.css">
-<main class="dashboard">
-
-  <!-- Header -->
-  <div class="dashboard-header">
+<main class="module-page">
+  <header class="page-header">
     <div>
-      <h1>Dashboard</h1>
-      <p>Wednesday, 18 March 2026 · Grand Meridian Hotel</p>
+      <h1>Bookings</h1>
+      <p>Create reservations and manage live booking status from the database.</p>
     </div>
-  </div>
+    <button class="secondary" type="button" (click)="loadData()" [disabled]="isLoading">
+      {{ isLoading ? 'Loading...' : 'Refresh' }}
+    </button>
+  </header>
 
-  <!-- Top Stats -->
-  <section class="stats-grid">
-    <div class="card stat green">
-      <p>Occupancy</p>
-      <h2>25%</h2>
-      <span>3/12 rooms</span>
-    </div>
+  <p *ngIf="errorMessage" class="alert error">{{ errorMessage }}</p>
 
-    <div class="card stat gold">
-      <p>Revenue (MTD)</p>
-      <h2>$1,137</h2>
-      <span>4 payments</span>
-    </div>
-
-    <div class="card stat blue">
-      <p>Available Rooms</p>
-      <h2>4</h2>
-      <span>Ready for check-in</span>
-    </div>
-
-    <div class="card stat purple">
-      <p>Active Bookings</p>
-      <h2>6</h2>
-      <span>Confirmed + checked-in</span>
-    </div>
-
-    <div class="card stat orange">
-      <p>Pending Services</p>
-      <h2>1</h2>
-      <span>Awaiting action</span>
-    </div>
-
-    <div class="card stat cyan">
-      <p>Staff On Site</p>
-      <h2>8</h2>
-      <span>5 departments</span>
-    </div>
+  <section class="summary-grid">
+    <article><span>Total Bookings</span><strong>{{ bookings.length }}</strong></article>
+    <article><span>Active</span><strong>{{ activeBookings }}</strong></article>
+    <article><span>Available Rooms</span><strong>{{ availableRooms.length }}</strong></article>
+    <article><span>Reserved Rooms</span><strong>{{ rooms.length - availableRooms.length }}</strong></article>
   </section>
 
-  <!-- Middle Section -->
-  <section class="grid-2">
+  <section class="content-grid">
+    <form class="panel form-panel" (ngSubmit)="createBooking()">
+      <h2>New Booking</h2>
 
-    <!-- Room Status -->
-    <div class="card">
-      <h3>Room Status Breakdown</h3>
+      <label>
+        Guest Full Name
+        <input name="fullName" [(ngModel)]="form.guest.fullName" required />
+      </label>
 
-      <div class="progress">
-        <label>Available</label>
-        <div class="bar"><span style="width: 60%" class="green"></span></div>
+      <label>
+        Phone
+        <input name="phone" [(ngModel)]="form.guest.phone" required />
+      </label>
+
+      <label>
+        Email
+        <input name="email" type="email" [(ngModel)]="form.guest.email" />
+      </label>
+
+      <label>
+        Room
+        <select name="roomId" [(ngModel)]="form.roomId" required>
+          <option value="">Select available room</option>
+          <option *ngFor="let room of availableRooms" [value]="room._id">
+            {{ room.roomNumber }} - {{ room.type }} - {{ room.pricePerNight | currency }}
+          </option>
+        </select>
+      </label>
+
+      <label>
+        Check-In
+        <input name="checkInDate" type="date" [(ngModel)]="form.checkInDate" required />
+      </label>
+
+      <label>
+        Check-Out
+        <input name="checkOutDate" type="date" [(ngModel)]="form.checkOutDate" required />
+      </label>
+
+      <label>
+        Status
+        <select name="status" [(ngModel)]="form.status">
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="checked_in">Checked In</option>
+        </select>
+      </label>
+
+      <button type="submit" [disabled]="isSaving">
+        {{ isSaving ? 'Saving...' : 'Create Booking' }}
+      </button>
+    </form>
+
+    <section class="panel">
+      <div class="section-header">
+        <h2>Booking List</h2>
+        <span class="badge active">{{ bookings.length }} records</span>
       </div>
 
-      <div class="progress">
-        <label>Reserved</label>
-        <div class="bar"><span style="width: 40%" class="purple"></span></div>
+      <p *ngIf="isLoading" class="muted">Loading bookings...</p>
+      <p *ngIf="!isLoading && bookings.length === 0" class="muted">No bookings found.</p>
+
+      <div class="table-wrapper" *ngIf="!isLoading && bookings.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Guest</th>
+              <th>Room</th>
+              <th>Check-In</th>
+              <th>Check-Out</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let booking of bookings">
+              <td>{{ booking.guest.fullName }}</td>
+              <td>{{ booking.room.roomNumber }}</td>
+              <td>{{ booking.checkInDate | date: 'dd MMM yyyy' }}</td>
+              <td>{{ booking.checkOutDate | date: 'dd MMM yyyy' }}</td>
+              <td>{{ booking.totalAmount | currency }}</td>
+              <td><span class="badge active">{{ booking.status | titlecase }}</span></td>
+              <td class="row-actions">
+                <button
+                  class="secondary"
+                  type="button"
+                  *ngIf="booking.status === 'confirmed' || booking.status === 'pending'"
+                  (click)="updateStatus(booking, 'checked_in')"
+                >
+                  Check In
+                </button>
+                <button
+                  class="secondary"
+                  type="button"
+                  *ngIf="booking.status === 'checked_in'"
+                  (click)="updateStatus(booking, 'checked_out')"
+                >
+                  Check Out
+                </button>
+                <button
+                  class="danger"
+                  type="button"
+                  *ngIf="booking.status !== 'checked_out' && booking.status !== 'cancelled'"
+                  (click)="updateStatus(booking, 'cancelled')"
+                >
+                  Cancel
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-
-      <div class="progress">
-        <label>Occupied</label>
-        <div class="bar"><span style="width: 40%" class="blue"></span></div>
-      </div>
-
-      <div class="progress">
-        <label>Maintenance</label>
-        <div class="bar"><span style="width: 20%" class="red"></span></div>
-      </div>
-
-      <div class="progress">
-        <label>Cleaning</label>
-        <div class="bar"><span style="width: 20%" class="orange"></span></div>
-      </div>
-    </div>
-
-    <!-- Activity -->
-    <div class="card">
-      <h3>Recent Activity</h3>
-
-      <div class="activity">
-        <div>Check-in — Room 102</div>
-        <div>Check-in — Room 301</div>
-        <div>Booking — Room 101</div>
-        <div>Room Service — Room 301</div>
-        <div>Config Updated</div>
-      </div>
-    </div>
-
+    </section>
   </section>
-
-  <!-- Table -->
-  <section class="card table-card">
-    <h3>Active Bookings</h3>
-
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Guest</th>
-          <th>Room</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td>Sophia Chen</td>
-          <td>102</td>
-          <td><span class="badge green">Checked In</span></td>
-        </tr>
-
-        <tr>
-          <td>2</td>
-          <td>Aiko Tanaka</td>
-          <td>301</td>
-          <td><span class="badge green">Checked In</span></td>
-        </tr>
-
-        <tr>
-          <td>3</td>
-          <td>Marcus Webb</td>
-          <td>101</td>
-          <td><span class="badge blue">Confirmed</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-
 </main>
