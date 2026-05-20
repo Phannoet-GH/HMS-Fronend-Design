@@ -25,7 +25,7 @@ export class PaymentsComponent implements OnInit {
 
     this.invoiceService.getInvoices().subscribe({
       next: (res) => {
-        this.invoices = res.data;
+        this.invoices = res.data.invoices;
         this.isLoading = false;
       },
       error: (err) => {

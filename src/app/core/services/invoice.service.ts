@@ -72,7 +72,7 @@ export type InvoicePayload = {
 export class InvoiceService {
   private readonly baseUrl = `${API_BASE_URL}/invoices`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   createInvoice(data: InvoicePayload) {
     return this.http.post<ApiResponse<Invoice>>(this.baseUrl, data);
@@ -87,7 +87,7 @@ export class InvoiceService {
       const queryString = params.toString();
       if (queryString) url += '?' + queryString;
     }
-    return this.http.get<ApiResponse<Invoice[]>>(url);
+    return this.http.get<ApiResponse<{ invoices: Invoice[]; total: number }>>(url);
   }
 
   getInvoiceById(id: string) {
@@ -106,6 +106,17 @@ export class InvoiceService {
   }
 
   deleteInvoice(id: string) {
-    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }
+// // return this.http.patch<ApiResponse<Invoice>>(`${this.baseUrl}/${id}/status`, data);
+// //   }
+
+// // updateInvoice(id: string, data: Partial<InvoicePayload>) {
+// //   return this.http.put<ApiResponse<Invoice>>(`${this.baseUrl}/${id}`, data);
+// // }
+
+// // deleteInvoice(id: string) {
+// //   return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
+// // }
+// }

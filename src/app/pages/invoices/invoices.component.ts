@@ -31,7 +31,7 @@ export class InvoicesComponent implements OnInit {
 
     this.invoiceService.getInvoices(filters).subscribe({
       next: (res) => {
-        this.invoices = res.data;
+        this.invoices = res.data.invoices;
         this.isLoading = false;
       },
       error: (err) => {
