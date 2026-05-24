@@ -10,6 +10,8 @@ import { InvoicesComponent } from './pages/invoices/invoices.component';
 import { ReportsComponent } from './pages/reports/reports.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
 import { AuthGuard } from './core/guards/auth.guard';
+import { RoleGuard } from './core/guards/role.guard';
+import { ROLES } from './core/services/role.service';
 import { CheckoutComponent } from './pages/checkout/checkout.component';
 import { RoomServicesComponent } from './pages/room-services/room-services.component';
 import { ServiceRequestsComponent } from './pages/service-requests/service-requests.component';
@@ -56,110 +58,150 @@ export const routes: Routes = [
 
       {
         path: 'dashboard',
-        component: DashboardComponent
+        component: DashboardComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       {
         path: 'rooms',
-        component: RoomsComponent
+        component: RoomsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.HOUSEKEEPING, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'checkin',
-        component: CheckInComponent
+        component: CheckInComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'check-in',
-        component: CheckInComponent
+        component: CheckInComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'checkout',
-        component: CheckoutComponent
+        component: CheckoutComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'bookings',
-        component: BookingsComponent
+        component: BookingsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'room-services',
-        component: RoomServicesComponent
+        component: RoomServicesComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       {
         path: 'service-requests',
-        component: ServiceRequestsComponent
+        component: ServiceRequestsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       },
 
       /* FINANCE */
 
       {
         path: 'invoices',
-        component: InvoicesComponent
+        component: InvoicesComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.FRONT_DESK, ROLES.ACCOUNT] }
       },
 
       {
         path: 'payments',
-        component: PaymentsComponent
+        component: PaymentsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT] }
       },
 
       /* GUESTS & STAFF */
 
       {
         path: 'guests',
-        component: GuestsComponent
+        component: GuestsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       {
         path: 'employees',
-        component: EmployeesComponent
+        component: EmployeesComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       {
         path: 'departments',
-        component: DepartmentsComponent
+        component: DepartmentsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       /* SUPPLY CHAIN */
 
       {
         path: 'inventory',
-        component: InventoryComponent
+        component: InventoryComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       {
         path: 'suppliers',
-        component: SuppliersComponent
+        component: SuppliersComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       {
         path: 'purchase-orders',
-        component: PurchaseOrdersComponent
+        component: PurchaseOrdersComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       /* ADMIN */
 
       {
         path: 'users',
-        component: UsersComponent
+        component: UsersComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       {
         path: 'roles',
-        component: RolesComponent
+        component: RolesComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       },
 
       {
         path: 'reports',
-        component: ReportsComponent
+        component: ReportsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT] }
       },
 
       {
         path: 'activity-logs',
-        component: ActivityLogsComponent
+        component: ActivityLogsComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.SUPER_ADMIN] }
       }
 
     ]

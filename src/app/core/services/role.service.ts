@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 
 export const ROLES = {
-  ADMIN: 'r1',
-  RECEPTION: 'r2',
+  SUPER_ADMIN: 'r1',
+  MANAGER: 'r2',
   HOUSEKEEPING: 'r3',
-  GUEST: 'r4',
-  ACCOUNTANT: 'r5'
+  FRONT_DESK: 'r4',
+  ACCOUNT: 'r5'
 } as const;
 
 export type RoleType = typeof ROLES[keyof typeof ROLES];
@@ -22,38 +22,38 @@ export interface RoleConfig {
 export class RoleService {
 
   private roleConfigs: Map<string, RoleConfig> = new Map([
-    [ROLES.ADMIN, {
-      id: ROLES.ADMIN,
-      name: 'Admin',
-      displayName: 'Administrator',
+    [ROLES.SUPER_ADMIN, {
+      id: ROLES.SUPER_ADMIN,
+      name: 'Super admin',
+      displayName: 'Super Admin',
       defaultRoute: '/dashboard',
       description: 'Full system access and management'
     }],
-    [ROLES.RECEPTION, {
-      id: ROLES.RECEPTION,
-      name: 'Reception',
-      displayName: 'Reception Staff',
+    [ROLES.MANAGER, {
+      id: ROLES.MANAGER,
+      name: 'Manager',
+      displayName: 'Manager',
       defaultRoute: '/rooms',
       description: 'Booking management, check-in/out, guest services'
     }],
     [ROLES.HOUSEKEEPING, {
       id: ROLES.HOUSEKEEPING,
       name: 'Housekeeping',
-      displayName: 'Housekeeping Staff',
+      displayName: 'Housekeeping',
       defaultRoute: '/rooms',
       description: 'Room status and maintenance'
     }],
-    [ROLES.GUEST, {
-      id: ROLES.GUEST,
-      name: 'Guest',
-      displayName: 'Guest Account',
+    [ROLES.FRONT_DESK, {
+      id: ROLES.FRONT_DESK,
+      name: 'Front desk',
+      displayName: 'Front Desk',
       defaultRoute: '/bookings',
-      description: 'View bookings and invoices'
+      description: 'Front desk operations and booking support'
     }],
-    [ROLES.ACCOUNTANT, {
-      id: ROLES.ACCOUNTANT,
-      name: 'Accountant',
-      displayName: 'Accountant',
+    [ROLES.ACCOUNT, {
+      id: ROLES.ACCOUNT,
+      name: 'Account',
+      displayName: 'Account',
       defaultRoute: '/invoices',
       description: 'Financial management and reporting'
     }]
@@ -96,29 +96,29 @@ export class RoleService {
     return config?.description || '';
   }
 
-  isAdmin() {
-    return this.getRole() === ROLES.ADMIN;
+  isSuperAdmin() {
+    return this.getRole() === ROLES.SUPER_ADMIN;
   }
 
-  isReception() {
-    return this.getRole() === ROLES.RECEPTION;
+  isManager() {
+    return this.getRole() === ROLES.MANAGER;
   }
 
   isHousekeeping() {
     return this.getRole() === ROLES.HOUSEKEEPING;
   }
 
-  isGuest() {
-    return this.getRole() === ROLES.GUEST;
+  isFrontDesk() {
+    return this.getRole() === ROLES.FRONT_DESK;
   }
 
-  isAccountant() {
-    return this.getRole() === ROLES.ACCOUNTANT;
+  isAccount() {
+    return this.getRole() === ROLES.ACCOUNT;
   }
 
   isStaff() {
     const role = this.getRole();
-    return role === ROLES.ADMIN || role === ROLES.RECEPTION || role === ROLES.HOUSEKEEPING || role === ROLES.ACCOUNTANT;
+    return role === ROLES.SUPER_ADMIN || role === ROLES.MANAGER || role === ROLES.HOUSEKEEPING || role === ROLES.ACCOUNT;
   }
 
   getAllRoles(): RoleConfig[] {

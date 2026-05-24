@@ -17,7 +17,7 @@ export class RegisterComponent {
     username: '',
     email: '',
     password: '',
-    roleId: 'r3'
+    roleId: 'r4'
   };
   errorMessage = '';
   isSubmitting = false;

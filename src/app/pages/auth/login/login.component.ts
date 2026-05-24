@@ -62,9 +62,9 @@ export class LoginComponent {
     this.errorMessage = '';
   }
 
-  useDemoReception() {
+  useDemoManager() {
     this.form = {
-      email: 'reception@hotel.com',
+      email: 'manager@hotel.com',
       password: 'reception123'
     };
     this.errorMessage = '';
@@ -78,17 +78,17 @@ export class LoginComponent {
     this.errorMessage = '';
   }
 
-  useDemoAccountant() {
+  useDemoAccount() {
     this.form = {
-      email: 'accountant@hotel.com',
+      email: 'account@hotel.com',
       password: 'accountant123'
     };
     this.errorMessage = '';
   }
 
-  useDemoGuest() {
+  useDemoFrontDesk() {
     this.form = {
-      email: 'guest@hotel.com',
+      email: 'frontdesk@hotel.com',
       password: 'guest123'
     };
     this.errorMessage = '';
