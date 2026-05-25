@@ -1,19 +1,24 @@
 <main class="guests-page">
-  <header class="topbar">
+  <header class="page-header">
     <div>
       <h1>Guests</h1>
       <p>Maintain guest profiles, contact details, and identification records.</p>
     </div>
-    <div class="search-row">
-      <input name="search" placeholder="Search guests" [(ngModel)]="search" (keyup.enter)="loadGuests()" />
-      <button type="button" class="secondary" (click)="loadGuests()">Search</button>
+    <div class="header-actions">
+      <button type="button" class="btn" (click)="toggleGuestForm()">
+        {{ showGuestForm ? 'Close Form' : 'Add Guest' }}
+      </button>
+      <div class="search-row">
+        <input name="search" placeholder="Search guests" [(ngModel)]="search" (keyup.enter)="loadGuests()" />
+        <button type="button" class="secondary" (click)="loadGuests()">Search</button>
+      </div>
     </div>
   </header>
 
   <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
-  <section class="content-grid">
-    <form class="guest-form" (ngSubmit)="saveGuest()">
+  <section class="content-grid full-width">
+    <form *ngIf="showGuestForm" class="guest-form" (ngSubmit)="saveGuest()">
       <h2>{{ selectedGuestId ? 'Edit Guest' : 'New Guest' }}</h2>
 
       <label>
@@ -42,14 +47,14 @@
       </label>
 
       <div class="actions">
-        <button type="submit" [disabled]="isSaving">
+        <button type="submit" class="btn" [disabled]="isSaving">
           {{ isSaving ? 'Saving...' : selectedGuestId ? 'Update Guest' : 'Create Guest' }}
         </button>
         <button type="button" class="secondary" (click)="resetForm()">Clear</button>
       </div>
     </form>
 
-    <section class="guest-list">
+    <section *ngIf="!showGuestForm" class="guest-list">
       <div class="list-header">
         <h2>Guest Directory</h2>
         <span class="badge">{{ guests.length }} records</span>

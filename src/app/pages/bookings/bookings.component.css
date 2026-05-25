@@ -118,6 +118,20 @@ th {
   padding-bottom: 10px;
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 td {
   padding: 12px 0;
   border-top: 1px solid #1f2937;

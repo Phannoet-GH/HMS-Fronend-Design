@@ -1,9 +1,12 @@
 <main class="rooms-page">
-  <header class="topbar">
+  <header class="page-header">
     <div>
       <h1>Rooms</h1>
       <p>Manage room inventory, nightly rates, and room status.</p>
     </div>
+    <button type="button" class="btn" (click)="toggleRoomForm()">
+      {{ showRoomForm ? 'Close Form' : 'New Room' }}
+    </button>
   </header>
 
   <section class="summary-grid" aria-label="Room summary">
@@ -25,8 +28,8 @@
     </article>
   </section>
 
-  <section class="content-grid">
-    <form class="room-form" (ngSubmit)="saveRoom()">
+  <section class="content-grid full-width">
+    <form *ngIf="showRoomForm" class="room-form" (ngSubmit)="saveRoom()">
       <h2>{{ selectedRoomId ? 'Edit Room' : 'Create Room' }}</h2>
 
       <label>
@@ -66,14 +69,14 @@
       <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
       <div class="actions">
-        <button type="submit" [disabled]="isSaving">
+        <button type="submit" class="btn" [disabled]="isSaving">
           {{ isSaving ? 'Saving...' : selectedRoomId ? 'Update Room' : 'Create Room' }}
         </button>
         <button type="button" class="secondary" (click)="resetForm()">Clear</button>
       </div>
     </form>
 
-    <section class="room-list">
+    <section *ngIf="!showRoomForm" class="room-list">
       <div class="list-header">
         <h2>Room List</h2>
         <button type="button" class="secondary" (click)="loadRooms()">Refresh</button>

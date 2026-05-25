@@ -24,6 +24,7 @@ export class RoomsComponent implements OnInit {
   selectedRoomId: string | null = null;
   isLoading = false;
   isSaving = false;
+  showRoomForm = false;
   errorMessage = '';
 
   readonly roomTypes: RoomType[] = ['single', 'double', 'suite', 'deluxe'];
@@ -82,6 +83,14 @@ export class RoomsComponent implements OnInit {
       status: room.status,
       description: room.description || ''
     };
+    this.showRoomForm = true;
+  }
+
+  toggleRoomForm() {
+    this.showRoomForm = !this.showRoomForm;
+    if (!this.showRoomForm) {
+      this.resetForm();
+    }
   }
 
   deleteRoom(room: Room) {

@@ -24,6 +24,7 @@ export class GuestsComponent implements OnInit {
   search = '';
   isLoading = false;
   isSaving = false;
+  showGuestForm = false;
   errorMessage = '';
 
   constructor(private guestService: GuestService) {}
@@ -78,6 +79,14 @@ export class GuestsComponent implements OnInit {
       idNumber: guest.idNumber || '',
       address: guest.address || ''
     };
+    this.showGuestForm = true;
+  }
+
+  toggleGuestForm() {
+    this.showGuestForm = !this.showGuestForm;
+    if (!this.showGuestForm) {
+      this.resetForm();
+    }
   }
 
   deleteGuest(guest: Guest) {

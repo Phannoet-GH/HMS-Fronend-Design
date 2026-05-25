@@ -5,18 +5,19 @@
   color: var(--text);
 }
 
-.topbar,
+.page-header,
 .search-row,
 .actions,
 .list-header,
 .guest-card,
-.row-actions {
+.row-actions,
+.header-actions {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.topbar,
+.page-header,
 .actions,
 .list-header,
 .guest-card {
@@ -30,16 +31,16 @@ p {
   margin-top: 0;
 }
 
-.topbar {
+.page-header {
   margin-bottom: 20px;
 }
 
-.topbar h1 {
+.page-header h1 {
   margin-bottom: 4px;
   font-size: 28px;
 }
 
-.topbar p,
+.page-header p,
 .muted,
 .guest-card p,
 .guest-card small {
@@ -55,6 +56,10 @@ p {
   grid-template-columns: 360px 1fr;
   gap: 20px;
   align-items: start;
+}
+
+.content-grid.full-width {
+  grid-template-columns: 1fr;
 }
 
 .guest-form,
@@ -121,7 +126,7 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .topbar,
+  .page-header,
   .guest-card {
     align-items: stretch;
     flex-direction: column;

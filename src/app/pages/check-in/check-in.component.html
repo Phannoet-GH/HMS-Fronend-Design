@@ -95,7 +95,7 @@
         <p *ngIf="successMessage" class="message success-text">{{ successMessage }}</p>
 
         <div class="form-actions">
-          <button type="submit" [disabled]="isSaving">
+          <button type="submit" class="btn" [disabled]="isSaving">
             {{ isSaving ? 'Checking In...' : 'Complete Check-In' }}
           </button>
 

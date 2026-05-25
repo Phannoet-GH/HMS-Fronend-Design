@@ -30,6 +30,7 @@ export class BookingsComponent implements OnInit {
   form: BookingPayload = structuredClone(emptyBookingForm);
   isLoading = false;
   isSaving = false;
+  showBookingForm = false;
   errorMessage = '';
 
   constructor(
@@ -85,6 +86,10 @@ export class BookingsComponent implements OnInit {
         this.isSaving = false;
       }
     });
+  }
+
+  toggleBookingForm() {
+    this.showBookingForm = !this.showBookingForm;
   }
 
   updateStatus(booking: Booking, status: string) {
