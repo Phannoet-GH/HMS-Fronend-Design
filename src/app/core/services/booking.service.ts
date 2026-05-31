@@ -10,7 +10,7 @@ export type Booking = {
     email?: string;
     phone: string;
   };
-  room: Room;
+  room: Room | null;
   checkInDate: string;
   checkOutDate: string;
   status: string;
@@ -51,11 +51,23 @@ export class BookingService {
     return this.http.get<ApiResponse<Booking[]>>(url);
   }
 
+  getBookingById(id: string) {
+    return this.http.get<ApiResponse<Booking>>(`${this.baseUrl}/${id}`);
+  }
+
   createBooking(data: BookingPayload) {
     return this.http.post<ApiResponse<Booking>>(this.baseUrl, data);
   }
 
+  updateBooking(id: string, data: Partial<BookingPayload>) {
+    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/${id}`, data);
+  }
+
   updateBookingStatus(id: string, status: string) {
     return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/${id}/status`, { status });
+  }
+
+  deleteBooking(id: string) {
+    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
   }
 }

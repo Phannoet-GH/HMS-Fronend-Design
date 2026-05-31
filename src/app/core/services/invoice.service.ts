@@ -78,12 +78,14 @@ export class InvoiceService {
     return this.http.post<ApiResponse<Invoice>>(this.baseUrl, data);
   }
 
-  getInvoices(filters?: { status?: string; bookingId?: string }) {
+  getInvoices(filters?: { status?: string; bookingId?: string; skip?: number; limit?: number }) {
     let url = this.baseUrl;
     if (filters) {
       const params = new URLSearchParams();
       if (filters.status) params.append('status', filters.status);
       if (filters.bookingId) params.append('bookingId', filters.bookingId);
+      if (filters.skip !== undefined) params.append('skip', String(filters.skip));
+      if (filters.limit !== undefined) params.append('limit', String(filters.limit));
       const queryString = params.toString();
       if (queryString) url += '?' + queryString;
     }
@@ -106,17 +108,6 @@ export class InvoiceService {
   }
 
   deleteInvoice(id: string) {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
   }
 }
-// // return this.http.patch<ApiResponse<Invoice>>(`${this.baseUrl}/${id}/status`, data);
-// //   }
-
-// // updateInvoice(id: string, data: Partial<InvoicePayload>) {
-// //   return this.http.put<ApiResponse<Invoice>>(`${this.baseUrl}/${id}`, data);
-// // }
-
-// // deleteInvoice(id: string) {
-// //   return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
-// // }
-// }

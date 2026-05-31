@@ -16,11 +16,16 @@ export type Room = {
 };
 
 export type ApiResponse<T> = {
+  success?: boolean;
   message: string;
   data: T;
 };
 
 export type RoomPayload = Omit<Room, '_id'>;
+export type RoomFilters = {
+  status?: RoomStatus;
+  type?: RoomType;
+};
 
 @Injectable({ providedIn: 'root' })
 export class RoomService {
@@ -28,8 +33,17 @@ export class RoomService {
 
   constructor(private http: HttpClient) {}
 
-  getRooms() {
-    return this.http.get<ApiResponse<Room[]>>(this.baseUrl);
+  getRooms(filters?: RoomFilters) {
+    return this.http.get<ApiResponse<Room[]>>(this.baseUrl, {
+      params: {
+        ...(filters?.status ? { status: filters.status } : {}),
+        ...(filters?.type ? { type: filters.type } : {})
+      }
+    });
+  }
+
+  getRoomById(id: string) {
+    return this.http.get<ApiResponse<Room>>(`${this.baseUrl}/${id}`);
   }
 
   createRoom(data: RoomPayload) {

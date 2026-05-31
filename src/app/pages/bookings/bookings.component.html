@@ -101,7 +101,7 @@
           <tbody>
             <tr *ngFor="let booking of bookings">
               <td>{{ booking.guest.fullName }}</td>
-              <td>{{ booking.room.roomNumber }}</td>
+              <td>{{ booking.room?.roomNumber || 'Room unavailable' }}</td>
               <td>{{ booking.checkInDate | date: 'dd MMM yyyy' }}</td>
               <td>{{ booking.checkOutDate | date: 'dd MMM yyyy' }}</td>
               <td>{{ booking.totalAmount | currency }}</td>

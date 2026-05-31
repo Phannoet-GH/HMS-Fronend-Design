@@ -26,6 +26,10 @@ export class GuestService {
     return this.http.get<ApiResponse<Guest[]>>(this.baseUrl, { params });
   }
 
+  getGuestById(id: string) {
+    return this.http.get<ApiResponse<Guest>>(`${this.baseUrl}/${id}`);
+  }
+
   createGuest(data: GuestPayload) {
     return this.http.post<ApiResponse<Guest>>(this.baseUrl, data);
   }

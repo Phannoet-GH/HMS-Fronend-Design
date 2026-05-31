@@ -47,7 +47,7 @@
           <select name="selectedBookingId" [(ngModel)]="selectedBookingId" required>
             <option value="">Select checked-in guest</option>
             <option *ngFor="let booking of filteredBookings" [value]="booking._id">
-              {{ booking.guest.fullName }} - Room {{ booking.room.roomNumber }}
+              {{ booking.guest.fullName }} - {{ booking.room ? 'Room ' + booking.room.roomNumber : 'Room unavailable' }}
             </option>
           </select>
         </label>
@@ -62,7 +62,7 @@
             Room
             <input
               type="text"
-              [value]="selectedBooking ? selectedBooking.room.roomNumber + ' - ' + selectedBooking.room.type : ''"
+              [value]="selectedRoomLabel"
               readonly
             />
           </label>
@@ -131,9 +131,7 @@
       <div class="guest-card">
         <span>Booking ID</span>
         <strong>{{ selectedBooking?._id || 'Not selected' }}</strong>
-        <p *ngIf="selectedBooking">
-          {{ totalNights }} nights in {{ selectedBooking.room.type }}, room {{ selectedBooking.room.roomNumber }}
-        </p>
+        <p *ngIf="selectedStaySummary">{{ selectedStaySummary }}</p>
       </div>
 
       <div class="billing-list">

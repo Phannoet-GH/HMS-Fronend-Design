@@ -80,6 +80,11 @@ export class CheckoutComponent implements OnInit {
       return;
     }
 
+    if (!booking.room) {
+      this.errorMessage = 'This booking is missing its room record and cannot be checked out';
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
     this.successMessage = '';
@@ -133,13 +138,23 @@ export class CheckoutComponent implements OnInit {
 
     return this.activeBookings.filter((booking) => {
       return booking.guest.fullName.toLowerCase().includes(term)
-        || booking.room.roomNumber.toLowerCase().includes(term)
+        || (booking.room?.roomNumber || '').toLowerCase().includes(term)
         || booking._id.toLowerCase().includes(term);
     });
   }
 
   get selectedBooking() {
     return this.activeBookings.find((booking) => booking._id === this.selectedBookingId) || null;
+  }
+
+  get selectedRoomLabel() {
+    const room = this.selectedBooking?.room;
+    return room ? `${room.roomNumber} - ${room.type}` : '';
+  }
+
+  get selectedStaySummary() {
+    const room = this.selectedBooking?.room;
+    return room ? `${this.totalNights} nights in ${room.type}, room ${room.roomNumber}` : '';
   }
 
   get totalNights() {
@@ -153,7 +168,7 @@ export class CheckoutComponent implements OnInit {
   }
 
   get roomCharges() {
-    return this.selectedBooking ? this.totalNights * this.selectedBooking.room.pricePerNight : 0;
+    return this.selectedBooking?.room ? this.totalNights * this.selectedBooking.room.pricePerNight : 0;
   }
 
   get taxAmount() {

@@ -162,7 +162,7 @@
             <div *ngFor="let booking of recentBookings" class="booking-item">
               <div class="booking-guest">
                 <strong>{{ booking.guest.fullName }}</strong>
-                <small>Room {{ booking.room.roomNumber }}</small>
+                <small>{{ booking.room ? 'Room ' + booking.room.roomNumber : 'Room unavailable' }}</small>
               </div>
               <div class="booking-details">
                 <span [ngClass]="getBookingStatusBadgeClass(booking.status)" class="badge">
