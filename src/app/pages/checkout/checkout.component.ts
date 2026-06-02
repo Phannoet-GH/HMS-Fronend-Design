@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { switchMap } from 'rxjs';
 import { Booking, BookingService } from '../../core/services/booking.service';
@@ -11,7 +11,7 @@ import { Invoice, InvoiceService } from '../../core/services/invoice.service';
   templateUrl: './checkout.component.html',
   styleUrl: './checkout.component.css',
 })
-export class CheckoutComponent implements OnInit {
+export class CheckoutComponent implements OnInit, OnDestroy {
   activeBookings: Booking[] = [];
   invoices: Invoice[] = [];
   selectedBookingId = '';
@@ -25,6 +25,7 @@ export class CheckoutComponent implements OnInit {
   isSaving = false;
   errorMessage = '';
   successMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private bookingService: BookingService,
@@ -33,11 +34,20 @@ export class CheckoutComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadData() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadData(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.bookingService.getBookings({ status: 'checked_in' }).subscribe({
       next: (res) => {
@@ -52,6 +62,11 @@ export class CheckoutComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.isSaving || this.isLoading) return;
+    this.loadData(true);
   }
 
   loadInvoices() {

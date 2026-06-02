@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Booking, BookingPayload, BookingService } from '../../core/services/booking.service';
 import { Room, RoomService } from '../../core/services/room.service';
@@ -12,13 +12,14 @@ const today = new Date().toISOString().slice(0, 10);
   templateUrl: './check-in.component.html',
   styleUrl: './check-in.component.css',
 })
-export class CheckInComponent implements OnInit {
+export class CheckInComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
   bookings: Booking[] = [];
   isLoading = false;
   isSaving = false;
   errorMessage = '';
   successMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   form: BookingPayload & { guests: number; notes: string; paymentStatus: string } = {
     guest: {
@@ -43,11 +44,20 @@ export class CheckInComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadData() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadData(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.roomService.getRooms().subscribe({
       next: (res) => {
@@ -59,6 +69,11 @@ export class CheckInComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.isSaving || this.isLoading) return;
+    this.loadData(true);
   }
 
   loadBookings() {

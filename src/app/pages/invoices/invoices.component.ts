@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Invoice, InvoiceService } from '../../core/services/invoice.service';
@@ -10,22 +10,32 @@ import { Invoice, InvoiceService } from '../../core/services/invoice.service';
   templateUrl: './invoices.component.html',
   styleUrl: './invoices.component.css'
 })
-export class InvoicesComponent implements OnInit {
+export class InvoicesComponent implements OnInit, OnDestroy {
   invoices: Invoice[] = [];
   isLoading = false;
   errorMessage = '';
   successMessage = '';
   statusFilter = 'all';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(private invoiceService: InvoiceService) {}
 
   ngOnInit() {
     this.loadInvoices();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadInvoices() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadInvoices(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     const filters = this.statusFilter !== 'all' ? { status: this.statusFilter } : undefined;
 
@@ -39,6 +49,11 @@ export class InvoicesComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.isLoading) return;
+    this.loadInvoices(true);
   }
 
   onStatusFilterChange() {

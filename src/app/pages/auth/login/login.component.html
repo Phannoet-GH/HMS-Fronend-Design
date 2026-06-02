@@ -40,25 +40,6 @@
       {{ isSubmitting ? 'Signing in...' : 'Login' }}
     </button>
 
-    <div class="demo-buttons">
-      <p class="demo-title">Demo Accounts:</p>
-      <button type="button" class="demo-button admin" (click)="useDemoAdmin()" title="Super admin - Full system access">
-        🔑 Super Admin
-      </button>
-      <button type="button" class="demo-button manager" (click)="useDemoManager()" title="Manager - Booking & check-in/out">
-        👤 Manager
-      </button>
-      <button type="button" class="demo-button housekeeping" (click)="useDemoHousekeeping()" title="Housekeeping - Room maintenance">
-        🧹 Housekeeping
-      </button>
-      <button type="button" class="demo-button account" (click)="useDemoAccount()" title="Account - Financial management">
-        💰 Account
-      </button>
-      <button type="button" class="demo-button frontdesk" (click)="useDemoFrontDesk()" title="Front desk - Booking support">
-        👨 Front Desk
-      </button>
-    </div>
-
     <p class="switch-link">
       Need an account?
       <a routerLink="/register">Create one</a>

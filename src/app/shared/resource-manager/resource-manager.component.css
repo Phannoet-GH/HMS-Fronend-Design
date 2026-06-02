@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+.actions,
+.row-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.row-actions button {
+  min-height: 36px;
+  padding: 8px 12px;
+}

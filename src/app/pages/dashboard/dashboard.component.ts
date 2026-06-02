@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Booking, BookingService } from '../../core/services/booking.service';
 import { Room, RoomService } from '../../core/services/room.service';
@@ -13,11 +13,12 @@ import { RevenueChartComponent } from '../../shared/revenue-chart/revenue-chart.
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
   bookings: Booking[] = [];
   isLoading = false;
   errorMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private roomService: RoomService,
@@ -26,11 +27,20 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadDashboard();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadDashboard() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadDashboard(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.roomService.getRooms().subscribe({
       next: (roomRes) => {
@@ -42,6 +52,11 @@ export class DashboardComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.isLoading) return;
+    this.loadDashboard(true);
   }
 
   private loadBookings() {

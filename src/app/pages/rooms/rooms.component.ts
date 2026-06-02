@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Room, RoomPayload, RoomService, RoomStatus, RoomType } from '../../core/services/room.service';
 
@@ -18,7 +18,7 @@ const emptyRoomForm: RoomPayload = {
   templateUrl: './rooms.component.html',
   styleUrl: './rooms.component.css',
 })
-export class RoomsComponent implements OnInit {
+export class RoomsComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
   form: RoomPayload = { ...emptyRoomForm };
   selectedRoomId: string | null = null;
@@ -26,6 +26,7 @@ export class RoomsComponent implements OnInit {
   isSaving = false;
   showRoomForm = false;
   errorMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   readonly roomTypes: RoomType[] = ['single', 'double', 'suite', 'deluxe'];
   readonly roomStatuses: RoomStatus[] = ['available', 'occupied', 'maintenance', 'reserved'];
@@ -34,11 +35,20 @@ export class RoomsComponent implements OnInit {
 
   ngOnInit() {
     this.loadRooms();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadRooms() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadRooms(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.roomService.getRooms().subscribe({
       next: (res) => {
@@ -50,6 +60,11 @@ export class RoomsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.showRoomForm || this.isSaving || this.isLoading) return;
+    this.loadRooms(true);
   }
 
   saveRoom() {

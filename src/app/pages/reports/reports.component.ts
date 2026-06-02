@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
@@ -14,12 +14,13 @@ import { InvoiceService, Invoice } from '../../core/services/invoice.service';
   templateUrl: './reports.component.html',
   styleUrl: './reports.component.css'
 })
-export class ReportsComponent implements OnInit {
+export class ReportsComponent implements OnInit, OnDestroy {
   bookings: Booking[] = [];
   rooms: Room[] = [];
   invoices: Invoice[] = [];
   isLoading = false;
   selectedDateRange = '30days';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   // Chart configurations
   occupancyTrendChart: ChartConfiguration<'line'> = {
@@ -48,10 +49,19 @@ export class ReportsComponent implements OnInit {
 
   ngOnInit() {
     this.loadReportData();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadReportData() {
-    this.isLoading = true;
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadReportData(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+    }
 
     this.bookingService.getBookings().subscribe({
       next: (res) => {
@@ -75,6 +85,11 @@ export class ReportsComponent implements OnInit {
         this.invoices = res.data.invoices;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.isLoading) return;
+    this.loadReportData(true);
   }
 
   private initializeCharts() {

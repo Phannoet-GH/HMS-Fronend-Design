@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Guest, GuestPayload, GuestService } from '../../core/services/guest.service';
 
@@ -17,7 +17,7 @@ const emptyGuestForm: GuestPayload = {
   templateUrl: './guests.component.html',
   styleUrl: './guests.component.css'
 })
-export class GuestsComponent implements OnInit {
+export class GuestsComponent implements OnInit, OnDestroy {
   guests: Guest[] = [];
   form: GuestPayload = { ...emptyGuestForm };
   selectedGuestId: string | null = null;
@@ -26,16 +26,26 @@ export class GuestsComponent implements OnInit {
   isSaving = false;
   showGuestForm = false;
   errorMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(private guestService: GuestService) {}
 
   ngOnInit() {
     this.loadGuests();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadGuests() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadGuests(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.guestService.getGuests(this.search).subscribe({
       next: (res) => {
@@ -47,6 +57,11 @@ export class GuestsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.showGuestForm || this.isSaving || this.isLoading) return;
+    this.loadGuests(true);
   }
 
   saveGuest() {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Invoice, InvoiceService } from '../../core/services/invoice.service';
 
 @Component({
@@ -8,20 +8,30 @@ import { Invoice, InvoiceService } from '../../core/services/invoice.service';
   templateUrl: './payments.component.html',
   styleUrl: './payments.component.css'
 })
-export class PaymentsComponent implements OnInit {
+export class PaymentsComponent implements OnInit, OnDestroy {
   invoices: Invoice[] = [];
   isLoading = false;
   errorMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(private invoiceService: InvoiceService) {}
 
   ngOnInit() {
     this.loadPayments();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadPayments() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadPayments(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.invoiceService.getInvoices().subscribe({
       next: (res) => {
@@ -33,6 +43,11 @@ export class PaymentsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.isLoading) return;
+    this.loadPayments(true);
   }
 
   markPaid(invoice: Invoice) {

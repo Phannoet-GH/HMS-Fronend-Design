@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Booking, BookingPayload, BookingService } from '../../core/services/booking.service';
 import { Room, RoomService } from '../../core/services/room.service';
@@ -24,7 +24,7 @@ const emptyBookingForm: BookingPayload = {
   templateUrl: './bookings.component.html',
   styleUrl: './bookings.component.css'
 })
-export class BookingsComponent implements OnInit {
+export class BookingsComponent implements OnInit, OnDestroy {
   bookings: Booking[] = [];
   rooms: Room[] = [];
   form: BookingPayload = structuredClone(emptyBookingForm);
@@ -32,6 +32,7 @@ export class BookingsComponent implements OnInit {
   isSaving = false;
   showBookingForm = false;
   errorMessage = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private bookingService: BookingService,
@@ -40,11 +41,20 @@ export class BookingsComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
 
-  loadData() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  loadData(silent = false) {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
 
     this.roomService.getRooms().subscribe({
       next: (roomRes) => {
@@ -56,6 +66,11 @@ export class BookingsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private autoRefresh() {
+    if (this.showBookingForm || this.isSaving || this.isLoading) return;
+    this.loadData(true);
   }
 
   private loadBookings() {

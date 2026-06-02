@@ -54,46 +54,6 @@ export class LoginComponent {
     });
   }
 
-  useDemoAdmin() {
-    this.form = {
-      email: 'admin@hotel.com',
-      password: 'admin123'
-    };
-    this.errorMessage = '';
-  }
-
-  useDemoManager() {
-    this.form = {
-      email: 'manager@hotel.com',
-      password: 'reception123'
-    };
-    this.errorMessage = '';
-  }
-
-  useDemoHousekeeping() {
-    this.form = {
-      email: 'housekeeping@hotel.com',
-      password: 'housekeeping123'
-    };
-    this.errorMessage = '';
-  }
-
-  useDemoAccount() {
-    this.form = {
-      email: 'account@hotel.com',
-      password: 'accountant123'
-    };
-    this.errorMessage = '';
-  }
-
-  useDemoFrontDesk() {
-    this.form = {
-      email: 'frontdesk@hotel.com',
-      password: 'guest123'
-    };
-    this.errorMessage = '';
-  }
-
   getRoleService() {
     return this.roleService;
   }
