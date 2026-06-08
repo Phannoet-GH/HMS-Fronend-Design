@@ -17,16 +17,16 @@ export type AuthResponse = {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  private readonly baseUrl = `${API_BASE_URL}/auth`;
+  private readonly Url = `${API_BASE_URL}/auth`;
 
   constructor(private http: HttpClient) {}
 
   register(data: { username: string; email: string; password: string; roleId?: string }) {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/register`, data);
+    return this.http.post<AuthResponse>(`${this.Url}/register`, data);
   }
 
   login(data: { email: string; password: string }) {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/login`, data);
+    return this.http.post<AuthResponse>(`${this.Url}/login`, data);
   }
 
   saveToken(token: string) {
