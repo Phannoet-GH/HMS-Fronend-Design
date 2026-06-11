@@ -4,7 +4,7 @@
     <h2 class="title">Create Account</h2>
     <p class="subtitle">Choose a role and connect to the hotel workspace.</p>
 
-    <form (ngSubmit)="register()">
+    <form #registerForm="ngForm" (ngSubmit)="register(registerForm)">
       <label>
         Username
         <input
@@ -12,6 +12,7 @@
           name="username"
           [(ngModel)]="form.username"
           placeholder="Full name"
+          autocomplete="name"
           required
         />
       </label>
@@ -23,6 +24,8 @@
           name="email"
           [(ngModel)]="form.email"
           placeholder="name@hotel.com"
+          autocomplete="email"
+          email
           required
         />
       </label>
@@ -34,6 +37,8 @@
           name="password"
           [(ngModel)]="form.password"
           placeholder="Create password"
+          autocomplete="new-password"
+          minlength="6"
           required
         />
       </label>
@@ -51,7 +56,7 @@
 
       <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
-      <button type="submit" [disabled]="isSubmitting">
+      <button type="submit" [disabled]="isSubmitting || registerForm.invalid">
         {{ isSubmitting ? 'Creating...' : 'Register' }}
       </button>
     </form>

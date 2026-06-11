@@ -42,12 +42,25 @@ export class AuthService {
   }
 
   isAuthenticated() {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return false;
+    }
+
+    return true;
   }
 
   getCurrentUser(): AuthUser | null {
     const token = this.getToken();
     if (!token) return null;
+
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return null;
+    }
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -59,6 +72,16 @@ export class AuthService {
       };
     } catch {
       return null;
+    }
+  }
+
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp) return false;
+      return payload.exp * 1000 <= Date.now();
+    } catch {
+      return true;
     }
   }
 

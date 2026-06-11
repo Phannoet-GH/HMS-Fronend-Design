@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { RoleService } from '../../../core/services/role.service';
 
@@ -24,7 +24,8 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private roleService: RoleService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   login() {
@@ -37,7 +38,8 @@ export class LoginComponent {
         
         // Get the user's role and redirect accordingly
         const userRole = res.user.roleId;
-        const defaultRoute = this.roleService.getDefaultRoute(userRole);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const defaultRoute = returnUrl || this.roleService.getDefaultRoute(userRole);
         const roleName = this.roleService.getRoleName(userRole);
         
         console.log(`✓ Login successful as ${roleName}. Redirecting to ${defaultRoute}...`);

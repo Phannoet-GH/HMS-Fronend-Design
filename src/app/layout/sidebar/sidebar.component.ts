@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { RoleService } from '../../core/services/role.service';
+import { ROLES, RoleService } from '../../core/services/role.service';
 
 interface NavItem {
   id: string;
@@ -31,45 +31,45 @@ export class SidebarComponent implements OnInit {
     {
       label: 'Operations',
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: 'D', roles: ['r1'] },
-        { id: 'rooms', label: 'Rooms', icon: 'R', roles: ['r1', 'r2', 'r3'] },
-        { id: 'checkin', label: 'Check In', icon: 'I', roles: ['r1', 'r2'] },
-        { id: 'checkout', label: 'Check Out', icon: 'O', roles: ['r1', 'r2'] },
-        { id: 'bookings', label: 'Bookings', icon: 'B', roles: ['r1', 'r2', 'r4'] },
-        { id: 'room-services', label: 'Room Services', icon: 'S', roles: ['r1', 'r2'] },
-        { id: 'service-requests', label: 'Service Requests', icon: 'Q', roles: ['r1', 'r2', 'r4'] }
+        { id: 'dashboard', label: 'Dashboard', icon: 'D', roles: [ROLES.SUPER_ADMIN] },
+        { id: 'rooms', label: 'Rooms', icon: 'R', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.HOUSEKEEPING, ROLES.FRONT_DESK] },
+        { id: 'checkin', label: 'Check In', icon: 'I', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
+        { id: 'checkout', label: 'Check Out', icon: 'O', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
+        { id: 'bookings', label: 'Bookings', icon: 'B', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
+        { id: 'room-services', label: 'Room Services', icon: 'S', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] },
+        { id: 'service-requests', label: 'Service Requests', icon: 'Q', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       ]
     },
     {
       label: 'Finance',
       items: [
-        { id: 'invoices', label: 'Invoices', icon: 'N', roles: ['r1', 'r4', 'r5'] },
-        { id: 'payments', label: 'Payments', icon: 'P', roles: ['r1', 'r5'] }
+        { id: 'invoices', label: 'Invoices', icon: 'N', roles: [ROLES.SUPER_ADMIN, ROLES.FRONT_DESK, ROLES.ACCOUNT] },
+        { id: 'payments', label: 'Payments', icon: 'P', roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT] }
       ]
     },
     {
       label: 'Guests & Staff',
       items: [
-        { id: 'guests', label: 'Guests', icon: 'G', roles: ['r1', 'r2'] },
-        { id: 'employees', label: 'Employees', icon: 'E', roles: ['r1'] },
-        { id: 'departments', label: 'Departments', icon: 'T', roles: ['r1'] }
+        { id: 'guests', label: 'Guests', icon: 'G', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] },
+        { id: 'employees', label: 'Employees', icon: 'E', roles: [ROLES.SUPER_ADMIN] },
+        { id: 'departments', label: 'Departments', icon: 'T', roles: [ROLES.SUPER_ADMIN] }
       ]
     },
     {
       label: 'Supply Chain',
       items: [
-        { id: 'inventory', label: 'Inventory', icon: 'V', roles: ['r1'] },
-        { id: 'suppliers', label: 'Suppliers', icon: 'L', roles: ['r1'] },
-        { id: 'purchase-orders', label: 'Purchase Orders', icon: 'U', roles: ['r1'] }
+        { id: 'inventory', label: 'Inventory', icon: 'V', roles: [ROLES.SUPER_ADMIN] },
+        { id: 'suppliers', label: 'Suppliers', icon: 'L', roles: [ROLES.SUPER_ADMIN] },
+        { id: 'purchase-orders', label: 'Purchase Orders', icon: 'U', roles: [ROLES.SUPER_ADMIN] }
       ]
     },
     {
       label: 'Admin',
       items: [
-        { id: 'users', label: 'Users', icon: 'Y', roles: ['r1'] },
-        { id: 'roles', label: 'Roles', icon: 'A', roles: ['r1'] },
-        { id: 'reports', label: 'Reports', icon: 'M', roles: ['r1', 'r5'] },
-        { id: 'activity-logs', label: 'Activity Logs', icon: 'H', roles: ['r1'] }
+        { id: 'users', label: 'Users', icon: 'Y', roles: [ROLES.SUPER_ADMIN] },
+        { id: 'roles', label: 'Roles', icon: 'A', roles: [ROLES.SUPER_ADMIN] },
+        { id: 'reports', label: 'Reports', icon: 'M', roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT] },
+        { id: 'activity-logs', label: 'Activity Logs', icon: 'H', roles: [ROLES.SUPER_ADMIN] }
       ]
     }
   ];
