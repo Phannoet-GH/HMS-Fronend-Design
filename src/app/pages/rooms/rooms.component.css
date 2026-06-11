@@ -185,6 +185,63 @@ th {
   color: var(--red);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 11, 18, 0.72);
+}
+
+.confirm-modal {
+  width: min(420px, 100%);
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.confirm-modal h2 {
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.confirm-modal p {
+  margin-bottom: 16px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.confirm-modal strong {
+  color: var(--text);
+}
+
+.modal-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.modal-details span {
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 900px) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

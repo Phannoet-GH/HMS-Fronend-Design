@@ -1,7 +1,11 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { Room, RoomPayload, RoomService, RoomStatus, RoomType } from '../../core/services/room.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ROLES } from '../../core/services/role.service';
 
 const emptyRoomForm: RoomPayload = {
   roomNumber: '',
@@ -24,14 +28,21 @@ export class RoomsComponent implements OnInit, OnDestroy {
   selectedRoomId: string | null = null;
   isLoading = false;
   isSaving = false;
+  isDeleting = false;
   showRoomForm = false;
+  roomPendingDelete: Room | null = null;
   errorMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
   readonly roomTypes: RoomType[] = ['single', 'double', 'suite', 'deluxe'];
   readonly roomStatuses: RoomStatus[] = ['available', 'occupied', 'maintenance', 'reserved'];
 
-  constructor(private roomService: RoomService) {}
+  constructor(
+    private roomService: RoomService,
+    private authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.loadRooms();
@@ -48,16 +59,41 @@ export class RoomsComponent implements OnInit, OnDestroy {
     if (!silent) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.cdr.detectChanges();
     }
 
-    this.roomService.getRooms().subscribe({
-      next: (res) => {
-        this.rooms = res.data;
+    this.roomService.getRooms().pipe(
+      timeout(8000),
+      finalize(() => {
         this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (res) => {
+        this.rooms = Array.isArray(res.data) ? res.data : [];
+        this.errorMessage = '';
+        this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load rooms';
+        if (err.status === 401) {
+          this.authService.logout();
+          this.errorMessage = 'Your login expired. Please login again to load room data.';
+          this.isLoading = false;
+          this.cdr.detectChanges();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: '/rooms' }
+          });
+          return;
+        }
+
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? 'Room data timed out. Check that the backend is running, then refresh.'
+            : err.error?.message || 'Unable to load rooms';
+        }
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -67,23 +103,48 @@ export class RoomsComponent implements OnInit, OnDestroy {
     this.loadRooms(true);
   }
 
-  saveRoom() {
+  saveRoom(form: NgForm) {
+    if (!this.canManageRooms) {
+      this.errorMessage = 'You do not have permission to manage rooms';
+      return;
+    }
+
+    if (form.invalid || this.isSaving) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
 
-    const request = this.selectedRoomId
-      ? this.roomService.updateRoom(this.selectedRoomId, this.form)
-      : this.roomService.createRoom(this.form);
+    const payload: RoomPayload = {
+      roomNumber: this.form.roomNumber.trim(),
+      type: this.form.type,
+      pricePerNight: Number(this.form.pricePerNight),
+      capacity: Number(this.form.capacity),
+      status: this.form.status,
+      description: this.form.description?.trim() || ''
+    };
 
-    request.subscribe({
+    const request = this.selectedRoomId
+      ? this.roomService.updateRoom(this.selectedRoomId, payload)
+      : this.roomService.createRoom(payload);
+
+    request.pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isSaving = false;
+      })
+    ).subscribe({
       next: () => {
         this.resetForm();
+        this.showRoomForm = false;
         this.loadRooms();
-        this.isSaving = false;
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to save room';
-        this.isSaving = false;
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Room save timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to save room';
       }
     });
   }
@@ -102,6 +163,11 @@ export class RoomsComponent implements OnInit, OnDestroy {
   }
 
   toggleRoomForm() {
+    if (!this.canManageRooms) {
+      this.errorMessage = 'You do not have permission to manage rooms';
+      return;
+    }
+
     this.showRoomForm = !this.showRoomForm;
     if (!this.showRoomForm) {
       this.resetForm();
@@ -109,12 +175,39 @@ export class RoomsComponent implements OnInit, OnDestroy {
   }
 
   deleteRoom(room: Room) {
-    if (!confirm(`Delete room ${room.roomNumber}?`)) return;
+    if (!this.canManageRooms) {
+      this.errorMessage = 'You do not have permission to manage rooms';
+      return;
+    }
 
-    this.roomService.deleteRoom(room._id).subscribe({
-      next: () => this.loadRooms(),
+    this.roomPendingDelete = room;
+  }
+
+  cancelDeleteRoom() {
+    if (this.isDeleting) return;
+    this.roomPendingDelete = null;
+  }
+
+  confirmDeleteRoom() {
+    if (!this.roomPendingDelete || this.isDeleting) return;
+
+    this.isDeleting = true;
+    this.errorMessage = '';
+
+    this.roomService.deleteRoom(this.roomPendingDelete._id).pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isDeleting = false;
+      })
+    ).subscribe({
+      next: () => {
+        this.roomPendingDelete = null;
+        this.loadRooms();
+      },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to delete room';
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Room delete timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to delete room';
       }
     });
   }
@@ -134,5 +227,9 @@ export class RoomsComponent implements OnInit, OnDestroy {
 
   get maintenanceCount() {
     return this.rooms.filter((room) => room.status === 'maintenance').length;
+  }
+
+  get canManageRooms() {
+    return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.MANAGER]);
   }
 }
