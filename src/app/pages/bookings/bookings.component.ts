@@ -3,11 +3,14 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, forkJoin, timeout } from 'rxjs';
-import { Booking, BookingPayload, BookingService } from '../../core/services/booking.service';
-import { Room, RoomService } from '../../core/services/room.service';
+import { BookingService } from '../../core/services/booking.service';
+import { RoomService } from '../../core/services/room.service';
 import { AuthService } from '../../core/services/auth.service';
+import { Booking, BookingPayload } from '../../core/models/booking.model';
+import { Room } from '../../core/models/room.model';
 
 const today = new Date().toISOString().slice(0, 10);
+// Explicitly type this so TypeScript knows status can be any valid BookingStatus
 const emptyBookingForm: BookingPayload = {
   guest: {
     fullName: '',
@@ -19,7 +22,7 @@ const emptyBookingForm: BookingPayload = {
   roomId: '',
   checkInDate: today,
   checkOutDate: '',
-  status: 'confirmed'
+  status: 'confirmed' // Initial value is confirmed, but type is wide
 };
 
 @Component({
@@ -28,6 +31,7 @@ const emptyBookingForm: BookingPayload = {
   templateUrl: './bookings.component.html',
   styleUrl: './bookings.component.css'
 })
+
 export class BookingsComponent implements OnInit, OnDestroy {
   bookings: Booking[] = [];
   rooms: Room[] = [];
@@ -46,7 +50,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadData();
@@ -66,8 +70,9 @@ export class BookingsComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     }
 
+    // Changed exclusively to .getAll() to match your working CheckIn architecture
     forkJoin({
-      rooms: this.roomService.getRooms(),
+      rooms: this.roomService.getAll(),
       bookings: this.bookingService.getBookings()
     }).pipe(
       timeout(10000),
@@ -76,9 +81,10 @@ export class BookingsComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: ({ rooms, bookings }) => {
-        this.rooms = Array.isArray(rooms.data) ? rooms.data : [];
-        this.bookings = Array.isArray(bookings.data) ? bookings.data : [];
+      next: (res: any) => {
+        // Safe-check wrapper extraction: handles both raw arrays and unified envelope objects ({ data: [...] })
+        this.rooms = Array.isArray(res.rooms) ? res.rooms : (res.rooms && Array.isArray(res.rooms.data) ? res.rooms.data : []);
+        this.bookings = Array.isArray(res.bookings) ? res.bookings : (res.bookings && Array.isArray(res.bookings.data) ? res.bookings.data : []);
         this.errorMessage = '';
       },
       error: (err) => {
@@ -229,5 +235,10 @@ export class BookingsComponent implements OnInit, OnDestroy {
       success: status === 'checked_out',
       danger: status === 'cancelled'
     };
+  }
+  // Inside your BookingsComponent class:
+  canCheckIn(booking: Booking): boolean {
+    const currentStatus = booking.status as string;
+    return currentStatus === 'confirmed' || currentStatus === 'pending';
   }
 }

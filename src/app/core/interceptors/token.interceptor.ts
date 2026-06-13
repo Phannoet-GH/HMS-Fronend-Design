@@ -4,7 +4,7 @@ import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http'
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+  intercept(req: HttpRequest<any>, next: HttpHandler) {
 
     const token = localStorage.getItem('token');
 

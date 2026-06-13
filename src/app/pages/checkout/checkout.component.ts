@@ -3,9 +3,11 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize, switchMap, timeout } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Booking, BookingService } from '../../core/services/booking.service';
-import { Invoice, InvoiceService } from '../../core/services/invoice.service';
-import { AuthService } from '../../core/services/auth.service';
+import { BookingService } from '@core/services/booking.service';
+import { InvoiceService } from '@core/services/invoice.service';
+import { AuthService } from '@core/services/auth.service';
+import { Booking } from '@core/models/booking.model';
+import { Invoice } from '@core/models/invoice.model';
 
 @Component({
   selector: 'app-checkout',
@@ -38,7 +40,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.requestedBookingId = this.route.snapshot.queryParamMap.get('bookingId') || '';
@@ -47,9 +49,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
+    clearInterval(this.refreshTimer);
   }
 
   loadData(silent = false) {
@@ -61,7 +61,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
     forkJoin({
       bookings: this.bookingService.getBookings({ status: 'checked_in' }),
-      invoices: this.invoiceService.getInvoices({ limit: 100 })
+      invoices: this.invoiceService.getAllInvoices({ limit: 100 })
     }).pipe(
       timeout(10000),
       finalize(() => {
@@ -70,19 +70,17 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       })
     ).subscribe({
       next: ({ bookings, invoices }) => {
-        this.activeBookings = Array.isArray(bookings.data) ? bookings.data : [];
-        this.invoices = Array.isArray(invoices.data?.invoices) ? invoices.data.invoices : [];
+        this.activeBookings = bookings;
+        this.invoices = invoices;
 
-        if (this.requestedBookingId && this.activeBookings.some((booking) => booking._id === this.requestedBookingId)) {
+        if (this.requestedBookingId && this.activeBookings.some(b => b._id === this.requestedBookingId)) {
           this.selectedBookingId = this.requestedBookingId;
           this.requestedBookingId = '';
         } else if (!this.selectedBookingId && this.activeBookings.length > 0) {
           this.selectedBookingId = this.activeBookings[0]._id;
         }
       },
-      error: (err) => {
-        this.handleLoadError(err, silent);
-      }
+      error: (err) => this.handleLoadError(err, silent)
     });
   }
 
@@ -94,12 +92,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private handleLoadError(err: any, silent = false) {
     if (err.status === 401) {
       this.authService.logout();
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: '/checkout' }
-      });
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkout' } });
       return;
     }
-
     if (!silent) {
       this.errorMessage = err.name === 'TimeoutError'
         ? 'Checkout data timed out. Check that the backend and MongoDB are running, then refresh.'
@@ -119,7 +114,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.errorMessage = 'Select an active checked-in booking first';
       return;
     }
-
     if (!booking.room) {
       this.errorMessage = 'This booking is missing its room record and cannot be checked out';
       return;
@@ -144,22 +138,18 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     };
 
     const invoiceRequest = existingInvoice
-      ? this.invoiceService.updateInvoice(existingInvoice._id, invoicePayload)
-      : this.invoiceService.createInvoice({
-          bookingId: booking._id,
-          ...invoicePayload
-        });
+      ? this.invoiceService.update(existingInvoice._id, invoicePayload)
+      : this.invoiceService.create({ bookingId: booking._id, ...invoicePayload });
 
     invoiceRequest.pipe(
       timeout(15000),
-      switchMap((invoiceRes) => this.invoiceService.updateInvoiceStatus(
-        invoiceRes.data._id,
-        'paid',
-        new Date().toISOString(),
-        this.paymentMethod
-      )),
-      switchMap((paidInvoiceRes) => {
-        this.checkoutInvoice = paidInvoiceRes.data;
+      switchMap((invoice) => this.invoiceService.updateStatus(invoice._id, {
+        status: 'paid',
+        paymentDate: new Date().toISOString(),
+        paymentMethod: this.paymentMethod
+      })),
+      switchMap((paidInvoice) => {
+        this.checkoutInvoice = paidInvoice;
         return this.bookingService.updateBookingStatus(booking._id, 'checked_out');
       }),
       finalize(() => {
@@ -175,12 +165,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: '/checkout' }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkout' } });
           return;
         }
-
         this.errorMessage = err.name === 'TimeoutError'
           ? 'Check-out timed out. Check that the backend and MongoDB are running, then try again.'
           : err.error?.message || 'Unable to complete check-out';
@@ -198,37 +185,26 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.notes = '';
   }
 
-  closeReceipt() {
-    this.checkoutInvoice = null;
-  }
-
-  printReceipt() {
-    window.print();
-  }
+  closeReceipt() { this.checkoutInvoice = null; }
+  printReceipt() { window.print(); }
 
   get filteredBookings() {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) return this.activeBookings;
-
-    return this.activeBookings.filter((booking) => {
-      return booking.guest.fullName.toLowerCase().includes(term)
-        || (booking.room?.roomNumber || '').toLowerCase().includes(term)
-        || booking._id.toLowerCase().includes(term);
-    });
+    return this.activeBookings.filter(b =>
+      b.guest.fullName.toLowerCase().includes(term)
+      || (b.room?.roomNumber || '').toLowerCase().includes(term)
+      || b._id.toLowerCase().includes(term)
+    );
   }
 
-  get selectedBooking() {
-    return this.activeBookings.find((booking) => booking._id === this.selectedBookingId) || null;
-  }
-
-  get selectedInvoice() {
-    return this.selectedBooking ? this.getInvoiceForBooking(this.selectedBooking._id) : null;
-  }
+  get selectedBooking() { return this.activeBookings.find(b => b._id === this.selectedBookingId) || null; }
+  get selectedInvoice() { return this.selectedBooking ? this.getInvoiceForBooking(this.selectedBooking._id) : null; }
 
   getInvoiceForBooking(bookingId: string) {
-    return this.invoices.find((invoice) => {
-      const booking = invoice.booking as any;
-      return booking === bookingId || booking?._id === bookingId;
+    return this.invoices.find(inv => {
+      const b = inv.booking as any;
+      return b === bookingId || b?._id === bookingId;
     }) || null;
   }
 
@@ -244,36 +220,21 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   get totalNights() {
     if (!this.selectedBooking) return 0;
-
-    const checkInDate = new Date(this.selectedBooking.checkInDate);
-    const checkOutDate = new Date(this.selectedBooking.checkOutDate);
-    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-
+    const nights = Math.ceil(
+      (new Date(this.selectedBooking.checkOutDate).getTime() - new Date(this.selectedBooking.checkInDate).getTime())
+      / (1000 * 60 * 60 * 24)
+    );
     return nights > 0 ? nights : 1;
   }
 
-  get roomCharges() {
-    return this.selectedBooking?.room ? this.totalNights * this.selectedBooking.room.pricePerNight : 0;
-  }
-
-  get taxAmount() {
-    return ((this.roomCharges + this.serviceCharge) * this.taxPercentage) / 100;
-  }
-
-  get totalAmount() {
-    return this.roomCharges + this.serviceCharge + this.taxAmount;
-  }
-
-  get amountDue() {
-    return this.selectedInvoice?.status === 'paid' ? 0 : this.totalAmount;
-  }
-
-  get recentCheckOuts() {
-    return this.invoices.filter((invoice) => invoice.status === 'paid').slice(0, 5);
-  }
+  get roomCharges() { return this.selectedBooking?.room ? this.totalNights * this.selectedBooking.room.pricePerNight : 0; }
+  get taxAmount() { return ((this.roomCharges + this.serviceCharge) * this.taxPercentage) / 100; }
+  get totalAmount() { return this.roomCharges + this.serviceCharge + this.taxAmount; }
+  get amountDue() { return this.selectedInvoice?.status === 'paid' ? 0 : this.totalAmount; }
+  get recentCheckOuts() { return this.invoices.filter(inv => inv.status === 'paid').slice(0, 5); }
 
   get dueTodayCount() {
     const today = new Date().toDateString();
-    return this.activeBookings.filter((booking) => new Date(booking.checkOutDate).toDateString() === today).length;
+    return this.activeBookings.filter(b => new Date(b.checkOutDate).toDateString() === today).length;
   }
 }

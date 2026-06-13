@@ -3,9 +3,10 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
-import { Room, RoomPayload, RoomService, RoomStatus, RoomType } from '../../core/services/room.service';
-import { AuthService } from '../../core/services/auth.service';
-import { ROLES } from '../../core/services/role.service';
+import { RoomService } from '@core/services/room.service';
+import { Room, RoomPayload, RoomStatus, RoomType } from '@core/models/room.model';
+import { AuthService } from '@core/services/auth.service';
+import { ROLES } from '@core/services/role.service';
 
 const emptyRoomForm: RoomPayload = {
   roomNumber: '',
@@ -42,7 +43,7 @@ export class RoomsComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadRooms();
@@ -50,9 +51,7 @@ export class RoomsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
+    clearInterval(this.refreshTimer);
   }
 
   loadRooms(silent = false) {
@@ -62,28 +61,24 @@ export class RoomsComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     }
 
-    this.roomService.getRooms().pipe(
+    this.roomService.getAll().pipe(
       timeout(8000),
       finalize(() => {
         this.isLoading = false;
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: (res) => {
-        this.rooms = Array.isArray(res.data) ? res.data : [];
+      next: (rooms) => {
+        this.rooms = rooms;
         this.errorMessage = '';
-        this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
           this.errorMessage = 'Your login expired. Please login again to load room data.';
-          this.isLoading = false;
           this.cdr.detectChanges();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: '/rooms' }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: '/rooms' } });
           return;
         }
 
@@ -92,7 +87,6 @@ export class RoomsComponent implements OnInit, OnDestroy {
             ? 'Room data timed out. Check that the backend is running, then refresh.'
             : err.error?.message || 'Unable to load rooms';
         }
-        this.isLoading = false;
         this.cdr.detectChanges();
       }
     });
@@ -127,14 +121,12 @@ export class RoomsComponent implements OnInit, OnDestroy {
     };
 
     const request = this.selectedRoomId
-      ? this.roomService.updateRoom(this.selectedRoomId, payload)
-      : this.roomService.createRoom(payload);
+      ? this.roomService.update(this.selectedRoomId, payload)
+      : this.roomService.create(payload);
 
     request.pipe(
       timeout(15000),
-      finalize(() => {
-        this.isSaving = false;
-      })
+      finalize(() => { this.isSaving = false; })
     ).subscribe({
       next: () => {
         this.resetForm();
@@ -167,11 +159,8 @@ export class RoomsComponent implements OnInit, OnDestroy {
       this.errorMessage = 'You do not have permission to manage rooms';
       return;
     }
-
     this.showRoomForm = !this.showRoomForm;
-    if (!this.showRoomForm) {
-      this.resetForm();
-    }
+    if (!this.showRoomForm) this.resetForm();
   }
 
   deleteRoom(room: Room) {
@@ -179,7 +168,6 @@ export class RoomsComponent implements OnInit, OnDestroy {
       this.errorMessage = 'You do not have permission to manage rooms';
       return;
     }
-
     this.roomPendingDelete = room;
   }
 
@@ -194,11 +182,9 @@ export class RoomsComponent implements OnInit, OnDestroy {
     this.isDeleting = true;
     this.errorMessage = '';
 
-    this.roomService.deleteRoom(this.roomPendingDelete._id).pipe(
+    this.roomService.delete(this.roomPendingDelete._id).pipe(
       timeout(15000),
-      finalize(() => {
-        this.isDeleting = false;
-      })
+      finalize(() => { this.isDeleting = false; })
     ).subscribe({
       next: () => {
         this.roomPendingDelete = null;
@@ -217,19 +203,8 @@ export class RoomsComponent implements OnInit, OnDestroy {
     this.form = { ...emptyRoomForm };
   }
 
-  get availableCount() {
-    return this.rooms.filter((room) => room.status === 'available').length;
-  }
-
-  get occupiedCount() {
-    return this.rooms.filter((room) => room.status === 'occupied' || room.status === 'reserved').length;
-  }
-
-  get maintenanceCount() {
-    return this.rooms.filter((room) => room.status === 'maintenance').length;
-  }
-
-  get canManageRooms() {
-    return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.MANAGER]);
-  }
+  get availableCount() { return this.rooms.filter(r => r.status === 'available').length; }
+  get occupiedCount() { return this.rooms.filter(r => r.status === 'occupied' || r.status === 'reserved').length; }
+  get maintenanceCount() { return this.rooms.filter(r => r.status === 'maintenance').length; }
+  get canManageRooms() { return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.MANAGER]); }
 }

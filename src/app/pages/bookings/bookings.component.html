@@ -25,7 +25,8 @@
   </section>
 
   <section class="content-grid full-width">
-    <form *ngIf="showBookingForm" #bookingForm="ngForm" class="panel form-panel booking-form" (ngSubmit)="createBooking(bookingForm)">
+    <form *ngIf="showBookingForm" #bookingForm="ngForm" class="panel form-panel booking-form"
+      (ngSubmit)="createBooking(bookingForm)">
       <div class="section-header">
         <h2>New Booking</h2>
         <span class="badge active">{{ estimatedTotal | currency }}</span>
@@ -34,17 +35,20 @@
       <div class="form-grid">
         <label>
           Guest Full Name
-          <input name="fullName" placeholder="Enter guest name" autocomplete="name" [(ngModel)]="form.guest.fullName" required />
+          <input name="fullName" placeholder="Enter guest name" autocomplete="name" [(ngModel)]="form.guest.fullName"
+            required />
         </label>
 
         <label>
           Phone
-          <input name="phone" placeholder="Enter phone number" autocomplete="tel" [(ngModel)]="form.guest.phone" required />
+          <input name="phone" placeholder="Enter phone number" autocomplete="tel" [(ngModel)]="form.guest.phone"
+            required />
         </label>
 
         <label>
           Email
-          <input name="email" type="email" placeholder="Enter email" autocomplete="email" [(ngModel)]="form.guest.email" />
+          <input name="email" type="email" placeholder="Enter email" autocomplete="email"
+            [(ngModel)]="form.guest.email" />
         </label>
 
         <label>
@@ -120,32 +124,20 @@
               <td>{{ booking.checkInDate | date: 'dd MMM yyyy' }}</td>
               <td>{{ booking.checkOutDate | date: 'dd MMM yyyy' }}</td>
               <td>{{ booking.totalAmount | currency }}</td>
-              <td><span class="status" [ngClass]="statusClass(booking.status)">{{ booking.status | titlecase }}</span></td>
+              <td><span class="status" [ngClass]="statusClass(booking.status)">{{ booking.status | titlecase }}</span>
+              </td>
               <td class="row-actions">
-                <button
-                  class="secondary"
-                  type="button"
-                  *ngIf="booking.status === 'confirmed' || booking.status === 'pending'"
-                  [disabled]="updatingBookingId === booking._id"
-                  (click)="updateStatus(booking, 'checked_in')"
-                >
+                <button class="secondary" type="button" *ngIf="canCheckIn(booking)"
+                  [disabled]="updatingBookingId === booking._id" (click)="updateStatus(booking, 'checked_in')">
                   {{ updatingBookingId === booking._id ? 'Saving...' : 'Check In' }}
                 </button>
-                <button
-                  class="secondary"
-                  type="button"
-                  *ngIf="booking.status === 'checked_in'"
-                  (click)="openCheckout(booking)"
-                >
+                <button class="secondary" type="button" *ngIf="booking.status === 'checked_in'"
+                  (click)="openCheckout(booking)">
                   Check Out
                 </button>
-                <button
-                  class="danger"
-                  type="button"
+                <button class="danger" type="button"
                   *ngIf="booking.status !== 'checked_out' && booking.status !== 'cancelled'"
-                  [disabled]="updatingBookingId === booking._id"
-                  (click)="updateStatus(booking, 'cancelled')"
-                >
+                  [disabled]="updatingBookingId === booking._id" (click)="updateStatus(booking, 'cancelled')">
                   Cancel
                 </button>
               </td>

@@ -3,10 +3,13 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, forkJoin, timeout } from 'rxjs';
-import { Booking, BookingPayload, BookingService } from '../../core/services/booking.service';
-import { Invoice, InvoiceService } from '../../core/services/invoice.service';
-import { Room, RoomService } from '../../core/services/room.service';
-import { AuthService } from '../../core/services/auth.service';
+import { BookingService } from '@core/services/booking.service';
+import { InvoiceService } from '@core/services/invoice.service';
+import { RoomService } from '@core/services/room.service';
+import { AuthService } from '@core/services/auth.service';
+import { Booking, BookingPayload } from '@core/models/booking.model';
+import { Invoice } from '@core/models/invoice.model';
+import { Room } from '@core/models/room.model';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -50,7 +53,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadData();
@@ -58,9 +61,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
+    clearInterval(this.refreshTimer);
   }
 
   loadData(silent = false) {
@@ -71,7 +72,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
     }
 
     forkJoin({
-      rooms: this.roomService.getRooms(),
+      rooms: this.roomService.getAll({ status: 'available' }),
       bookings: this.bookingService.getBookings()
     }).pipe(
       timeout(10000),
@@ -81,13 +82,11 @@ export class CheckInComponent implements OnInit, OnDestroy {
       })
     ).subscribe({
       next: ({ rooms, bookings }) => {
-        this.rooms = Array.isArray(rooms.data) ? rooms.data : [];
-        this.bookings = Array.isArray(bookings.data) ? bookings.data : [];
+        this.rooms = rooms;
+        this.bookings = bookings;
         this.errorMessage = '';
       },
-      error: (err) => {
-        this.handleLoadError(err, silent);
-      }
+      error: (err) => this.handleLoadError(err, silent)
     });
   }
 
@@ -99,12 +98,9 @@ export class CheckInComponent implements OnInit, OnDestroy {
   private handleLoadError(err: any, silent = false) {
     if (err.status === 401) {
       this.authService.logout();
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: '/checkin' }
-      });
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkin' } });
       return;
     }
-
     if (!silent) {
       this.errorMessage = err.name === 'TimeoutError'
         ? 'Check-in data timed out. Check that the backend and MongoDB are running, then refresh.'
@@ -151,22 +147,17 @@ export class CheckInComponent implements OnInit, OnDestroy {
     this.bookingService.createBooking(payload).pipe(
       timeout(15000),
       finalize(() => {
-        if (!this.isCreatingInvoice) {
-          this.isSaving = false;
-        }
+        if (!this.isCreatingInvoice) this.isSaving = false;
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: (res) => this.createInvoiceForCheckIn(res.data, invoiceNights, invoiceRoomCharges),
+      next: (booking) => this.createInvoiceForCheckIn(booking, invoiceNights, invoiceRoomCharges),
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: '/checkin' }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkin' } });
           return;
         }
-
         this.errorMessage = err.name === 'TimeoutError'
           ? 'Check-in timed out. Check that the backend and MongoDB are running, then try again.'
           : err.error?.message || 'Unable to complete check-in';
@@ -177,7 +168,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
   private createInvoiceForCheckIn(booking: Booking, numberOfNights: number, roomCharges: number) {
     this.isCreatingInvoice = true;
 
-    this.invoiceService.createInvoice({
+    this.invoiceService.create({
       bookingId: booking._id,
       numberOfNights,
       roomCharges,
@@ -193,8 +184,8 @@ export class CheckInComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: (res) => {
-        this.createdInvoice = res.data;
+      next: (invoice) => {
+        this.createdInvoice = invoice;
         this.successMessage = 'Guest checked in and invoice created successfully';
         this.resetForm();
         this.loadData();
@@ -210,22 +201,12 @@ export class CheckInComponent implements OnInit, OnDestroy {
     });
   }
 
-  closeInvoicePreview() {
-    this.createdInvoice = null;
-  }
-
-  printInvoice() {
-    window.print();
-  }
+  closeInvoicePreview() { this.createdInvoice = null; }
+  printInvoice() { window.print(); }
 
   resetForm() {
     this.form = {
-      guest: {
-        fullName: '',
-        phone: '',
-        email: '',
-        address: ''
-      },
+      guest: { fullName: '', phone: '', email: '', address: '' },
       roomId: '',
       checkInDate: today,
       checkOutDate: '',
@@ -241,29 +222,18 @@ export class CheckInComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
   }
 
-  get availableRooms() {
-    return this.rooms.filter((room) => room.status === 'available');
-  }
-
-  get selectedRoom() {
-    return this.rooms.find((room) => room._id === this.form.roomId) || null;
-  }
+  get availableRooms() { return this.rooms.filter(r => r.status === 'available'); }
+  get selectedRoom() { return this.rooms.find(r => r._id === this.form.roomId) || null; }
 
   get totalNights() {
     if (!this.form.checkInDate || !this.form.checkOutDate) return 0;
-
-    const checkInDate = new Date(this.form.checkInDate);
-    const checkOutDate = new Date(this.form.checkOutDate);
-    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-
+    const nights = Math.ceil(
+      (new Date(this.form.checkOutDate).getTime() - new Date(this.form.checkInDate).getTime())
+      / (1000 * 60 * 60 * 24)
+    );
     return nights > 0 ? nights : 0;
   }
 
-  get totalAmount() {
-    return (this.selectedRoom?.pricePerNight || 0) * this.totalNights;
-  }
-
-  get recentCheckIns() {
-    return this.bookings.filter((booking) => booking.status === 'checked_in').slice(0, 5);
-  }
+  get totalAmount() { return (this.selectedRoom?.pricePerNight || 0) * this.totalNights; }
+  get recentCheckIns() { return this.bookings.filter(b => b.status === 'checked_in').slice(0, 5); }
 }

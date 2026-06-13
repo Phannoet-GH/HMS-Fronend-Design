@@ -1,60 +1,81 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { API_BASE_URL } from '../api.config';
-
-export type RoomStatus = 'available' | 'occupied' | 'maintenance' | 'reserved';
-export type RoomType = 'single' | 'double' | 'suite' | 'deluxe';
-
-export type Room = {
-  _id: string;
-  roomNumber: string;
-  type: RoomType;
-  pricePerNight: number;
-  capacity: number;
-  status: RoomStatus;
-  description?: string;
-};
-
-export type ApiResponse<T> = {
-  success?: boolean;
-  message: string;
-  data: T;
-};
-
-export type RoomPayload = Omit<Room, '_id'>;
-export type RoomFilters = {
-  status?: RoomStatus;
-  type?: RoomType;
-};
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, catchError, map, throwError } from 'rxjs';
+import { API_BASE_URL } from '@core/api.config';
+import { Room, RoomStatus, RoomQueryParams } from '@core/models/room.model';
+import { ApiResponse } from '@core/models/api-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class RoomService {
-  private readonly baseUrl = `${API_BASE_URL}/rooms`;
+  private readonly endpoint = `${API_BASE_URL}/rooms`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  getRooms(filters?: RoomFilters) {
-    return this.http.get<ApiResponse<Room[]>>(this.baseUrl, {
-      params: {
-        ...(filters?.status ? { status: filters.status } : {}),
-        ...(filters?.type ? { type: filters.type } : {})
-      }
-    });
+  getAll(filters: RoomQueryParams = {}): Observable<Room[]> {
+    let params = new HttpParams();
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.type) params = params.set('type', filters.type);
+    if (filters.capacity) params = params.set('capacity', String(filters.capacity));
+    if (filters.minPrice) params = params.set('minPrice', String(filters.minPrice));
+    if (filters.maxPrice) params = params.set('maxPrice', String(filters.maxPrice));
+
+    return this.http.get<ApiResponse<Room[]>>(this.endpoint, { params }).pipe(
+      map(res => res.data),
+      catchError(err => {
+        console.error('[RoomService] getAll failed', err);
+        return throwError(() => err);
+      })
+    );
   }
 
-  getRoomById(id: string) {
-    return this.http.get<ApiResponse<Room>>(`${this.baseUrl}/${id}`);
+  getById(id: string): Observable<Room> {
+    return this.http.get<ApiResponse<Room>>(`${this.endpoint}/${id}`).pipe(
+      map(res => res.data),
+      catchError(err => {
+        console.error(`[RoomService] getById(${id}) failed`, err);
+        return throwError(() => err);
+      })
+    );
   }
 
-  createRoom(data: RoomPayload) {
-    return this.http.post<ApiResponse<Room>>(this.baseUrl, data);
+  create(payload: Omit<Room, '_id' | 'createdAt' | 'updatedAt'>): Observable<Room> {
+    return this.http.post<ApiResponse<Room>>(this.endpoint, payload).pipe(
+      map(res => res.data),
+      catchError(err => {
+        console.error('[RoomService] create failed', err);
+        return throwError(() => err);
+      })
+    );
   }
 
-  updateRoom(id: string, data: RoomPayload) {
-    return this.http.patch<ApiResponse<Room>>(`${this.baseUrl}/${id}`, data);
+  update(id: string, payload: Partial<Omit<Room, '_id' | 'createdAt' | 'updatedAt'>>): Observable<Room> {
+    return this.http.put<ApiResponse<Room>>(`${this.endpoint}/${id}`, payload).pipe(
+      map(res => res.data),
+      catchError(err => {
+        console.error(`[RoomService] update(${id}) failed`, err);
+        return throwError(() => err);
+      })
+    );
   }
 
-  deleteRoom(id: string) {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  updateStatus(id: string, status: RoomStatus): Observable<Room> {
+    return this.http.patch<ApiResponse<Room>>(`${this.endpoint}/${id}/status`, { status }).pipe(
+      map(res => res.data),
+      catchError(err => {
+        console.error(`[RoomService] updateStatus(${id}) failed`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<ApiResponse<null>>(`${this.endpoint}/${id}`).pipe(
+      map(() => void 0),
+      catchError(err => {
+        console.error(`[RoomService] delete(${id}) failed`, err);
+        return throwError(() => err);
+      })
+    );
   }
 }
+

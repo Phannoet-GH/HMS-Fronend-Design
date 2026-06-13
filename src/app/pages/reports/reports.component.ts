@@ -4,9 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { finalize, forkJoin, timeout } from 'rxjs';
-import { BookingService, Booking } from '../../core/services/booking.service';
-import { RoomService, Room } from '../../core/services/room.service';
-import { InvoiceService, Invoice } from '../../core/services/invoice.service';
+import { BookingService } from '@core/services/booking.service';
+import { RoomService } from '@core/services/room.service';
+import { InvoiceService } from '@core/services/invoice.service';
+import { Booking } from '@core/models/booking.model';
+import { Room } from '@core/models/room.model';
+import { Invoice } from '@core/models/invoice.model';
 
 @Component({
   selector: 'app-reports',
@@ -24,7 +27,6 @@ export class ReportsComponent implements OnInit, OnDestroy {
   selectedDateRange = '30days';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
-  // Chart configurations
   occupancyTrendChart: ChartConfiguration<'line'> = {
     type: 'line',
     data: { labels: [], datasets: [] },
@@ -47,7 +49,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
     private bookingService: BookingService,
     private roomService: RoomService,
     private invoiceService: InvoiceService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadReportData();
@@ -55,9 +57,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
+    clearInterval(this.refreshTimer);
   }
 
   loadReportData(silent = false) {
@@ -68,27 +68,22 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
     forkJoin({
       bookings: this.bookingService.getBookings(),
-      rooms: this.roomService.getRooms(),
-      invoices: this.invoiceService.getInvoices()
+      rooms: this.roomService.getAll(),
+      invoices: this.invoiceService.getAllInvoices()   // ← was getAll()
     }).pipe(
       timeout(10000),
-      finalize(() => {
-        this.isLoading = false;
-      })
+      finalize(() => { this.isLoading = false; })
     ).subscribe({
       next: ({ bookings, rooms, invoices }) => {
-        this.bookings = Array.isArray(bookings.data) ? bookings.data : [];
-        this.rooms = Array.isArray(rooms.data) ? rooms.data : [];
-        this.invoices = Array.isArray(invoices.data?.invoices) ? invoices.data.invoices : [];
+        this.bookings = bookings;
+        this.rooms = rooms;
+        this.invoices = invoices;                      // ← drop .invoices chaining
         this.errorMessage = '';
         this.initializeCharts();
       },
       error: (err) => {
-        if (!silent) {
-          this.errorMessage = err.name === 'TimeoutError'
-            ? 'Report data timed out. Check that the backend and MongoDB are running, then refresh.'
-            : err.error?.message || 'Unable to load reports';
-        }
+        this.errorMessage = 'Failed to load report data.';
+        console.error('[ReportsComponent] Error loading report data:', err);
       }
     });
   }
@@ -116,7 +111,10 @@ export class ReportsComponent implements OnInit, OnDestroy {
         new Date(b.checkInDate) <= date && new Date(b.checkOutDate) >= date
       ).length;
 
-      const occupancyRate = this.rooms.length > 0 ? (occupiedCount / this.rooms.length) * 100 : 0;
+      const occupancyRate = this.rooms.length > 0
+        ? (occupiedCount / this.rooms.length) * 100
+        : 0;
+
       last30Days.push({ date: dateStr, occupancy: Math.round(occupancyRate) });
     }
 
@@ -124,19 +122,17 @@ export class ReportsComponent implements OnInit, OnDestroy {
       type: 'line',
       data: {
         labels: last30Days.map(d => d.date),
-        datasets: [
-          {
-            label: 'Occupancy Rate (%)',
-            data: last30Days.map(d => d.occupancy),
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            pointRadius: 4,
-            pointBackgroundColor: '#f59e0b',
-            tension: 0.4
-          }
-        ]
+        datasets: [{
+          label: 'Occupancy Rate (%)',
+          data: last30Days.map(d => d.occupancy),
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: '#f59e0b',
+          tension: 0.4
+        }]
       },
       options: {
         responsive: true,
@@ -148,9 +144,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
           y: {
             beginAtZero: true,
             max: 100,
-            ticks: {
-              callback: (value) => value + '%'
-            }
+            ticks: { callback: (value) => value + '%' }
           }
         }
       }
@@ -168,7 +162,8 @@ export class ReportsComponent implements OnInit, OnDestroy {
       const monthRevenue = this.invoices
         .filter(inv => {
           const invDate = new Date(inv.issueDate);
-          return invDate.getMonth() === date.getMonth() && invDate.getFullYear() === date.getFullYear();
+          return invDate.getMonth() === date.getMonth()
+            && invDate.getFullYear() === date.getFullYear();
         })
         .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
@@ -179,15 +174,13 @@ export class ReportsComponent implements OnInit, OnDestroy {
       type: 'bar',
       data: {
         labels: months.map(m => m.month),
-        datasets: [
-          {
-            label: 'Revenue',
-            data: months.map(m => m.revenue),
-            backgroundColor: '#10b981',
-            borderRadius: 6,
-            borderSkipped: false
-          }
-        ]
+        datasets: [{
+          label: 'Revenue',
+          data: months.map(m => m.revenue),
+          backgroundColor: '#10b981',
+          borderRadius: 6,
+          borderSkipped: false
+        }]
       },
       options: {
         responsive: true,
@@ -197,9 +190,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: {
-              callback: (value) => '$' + value.toLocaleString()
-            }
+            ticks: { callback: (value) => '$' + value.toLocaleString() }
           }
         }
       }
@@ -216,27 +207,20 @@ export class ReportsComponent implements OnInit, OnDestroy {
       type: 'doughnut',
       data: {
         labels: ['Confirmed', 'Checked In', 'Checked Out', 'Cancelled'],
-        datasets: [
-          {
-            data: [confirmed, checkedIn, checkedOut, cancelled],
-            backgroundColor: ['#06b6d4', '#f59e0b', '#10b981', '#ef4444'],
-            borderWidth: 2
-          }
-        ]
+        datasets: [{
+          data: [confirmed, checkedIn, checkedOut, cancelled],
+          backgroundColor: ['#06b6d4', '#f59e0b', '#10b981', '#ef4444'],
+          borderWidth: 2
+        }]
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
+        plugins: { legend: { position: 'bottom' } }
       }
     };
   }
 
-  // Report Metrics
-  get totalBookings() {
-    return this.bookings.length;
-  }
+  get totalBookings() { return this.bookings.length; }
 
   get averageStayDuration() {
     if (this.bookings.length === 0) return 0;
@@ -248,18 +232,13 @@ export class ReportsComponent implements OnInit, OnDestroy {
     return Math.round(totalDays / this.bookings.length);
   }
 
-  get totalRevenue() {
-    return this.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  }
-
-  get averageRevenuePerBooking() {
-    return this.bookings.length > 0 ? Math.round(this.totalRevenue / this.bookings.length) : 0;
-  }
+  get totalRevenue() { return this.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0); }
+  get averageRevenuePerBooking() { return this.bookings.length > 0 ? Math.round(this.totalRevenue / this.bookings.length) : 0; }
 
   get roomUtilizationRate() {
     if (this.rooms.length === 0) return 0;
-    const occupiedRooms = this.rooms.filter(r => r.status === 'occupied').length;
-    return Math.round((occupiedRooms / this.rooms.length) * 100);
+    const occupied = this.rooms.filter(r => r.status === 'occupied').length;
+    return Math.round((occupied / this.rooms.length) * 100);
   }
 
   get cancelledBookingsRate() {

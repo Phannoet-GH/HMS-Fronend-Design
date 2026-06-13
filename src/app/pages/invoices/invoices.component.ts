@@ -3,9 +3,10 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
-import { Invoice, InvoiceService } from '../../core/services/invoice.service';
-import { AuthService } from '../../core/services/auth.service';
-import { ROLES } from '../../core/services/role.service';
+import { AuthService } from '@core/services/auth.service';
+import { ROLES } from '@core/services/role.service';
+import { InvoiceService } from '@core/services/invoice.service';
+import { Invoice, InvoiceStatus } from '@core/models/invoice.model';
 
 @Component({
   selector: 'app-invoices',
@@ -30,7 +31,7 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadInvoices();
@@ -38,9 +39,7 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
+    clearInterval(this.refreshTimer);
   }
 
   loadInvoices(silent = false) {
@@ -50,27 +49,26 @@ export class InvoicesComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     }
 
-    const filters = this.statusFilter !== 'all' ? { status: this.statusFilter } : undefined;
+    const filters = this.statusFilter !== 'all'
+      ? { status: this.statusFilter as InvoiceStatus }
+      : {};
 
-    this.invoiceService.getInvoices(filters).pipe(
+    this.invoiceService.getAllInvoices(filters).pipe(
       timeout(10000),
       finalize(() => {
         this.isLoading = false;
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: (res) => {
-        this.invoices = Array.isArray(res.data?.invoices) ? res.data.invoices : [];
+      next: (invoices) => {
+        this.invoices = invoices;
       },
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: '/invoices' }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: '/invoices' } });
           return;
         }
-
         if (!silent) {
           this.errorMessage = err.name === 'TimeoutError'
             ? 'Invoice data timed out. Check that the backend and MongoDB are running, then refresh.'
@@ -93,18 +91,16 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     if (!this.canManageInvoices || this.isUpdating) return;
 
     this.isUpdating = true;
-    const paymentDate = new Date().toISOString();
-    this.invoiceService.updateInvoiceStatus(invoiceId, 'paid', paymentDate).pipe(
+    this.invoiceService.updateStatus(invoiceId, {
+      status: 'paid',
+      paymentDate: new Date().toISOString()
+    }).pipe(
       timeout(10000),
-      finalize(() => {
-        this.isUpdating = false;
-      })
+      finalize(() => { this.isUpdating = false; })
     ).subscribe({
-      next: (res) => {
+      next: (updated) => {
         const index = this.invoices.findIndex(inv => inv._id === invoiceId);
-        if (index > -1) {
-          this.invoices[index] = res.data;
-        }
+        if (index > -1) this.invoices[index] = updated;
         this.successMessage = 'Invoice marked as paid';
         setTimeout(() => this.successMessage = '', 3000);
       },
@@ -118,17 +114,13 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     if (!this.canManageInvoices || this.isUpdating) return;
 
     this.isUpdating = true;
-    this.invoiceService.updateInvoiceStatus(invoiceId, 'issued').pipe(
+    this.invoiceService.updateStatus(invoiceId, { status: 'issued' }).pipe(
       timeout(10000),
-      finalize(() => {
-        this.isUpdating = false;
-      })
+      finalize(() => { this.isUpdating = false; })
     ).subscribe({
-      next: (res) => {
+      next: (updated) => {
         const index = this.invoices.findIndex(inv => inv._id === invoiceId);
-        if (index > -1) {
-          this.invoices[index] = res.data;
-        }
+        if (index > -1) this.invoices[index] = updated;
         this.successMessage = 'Invoice issued successfully';
         setTimeout(() => this.successMessage = '', 3000);
       },
@@ -140,7 +132,7 @@ export class InvoicesComponent implements OnInit, OnDestroy {
 
   deleteInvoice(invoiceId: string) {
     if (!this.canManageInvoices) return;
-    this.invoicePendingDelete = this.invoices.find((invoice) => invoice._id === invoiceId) || null;
+    this.invoicePendingDelete = this.invoices.find(inv => inv._id === invoiceId) || null;
   }
 
   cancelDeleteInvoice() {
@@ -153,11 +145,10 @@ export class InvoicesComponent implements OnInit, OnDestroy {
 
     const invoiceId = this.invoicePendingDelete._id;
     this.isDeleting = true;
-    this.invoiceService.deleteInvoice(invoiceId).pipe(
+
+    this.invoiceService.delete(invoiceId).pipe(
       timeout(10000),
-      finalize(() => {
-        this.isDeleting = false;
-      })
+      finalize(() => { this.isDeleting = false; })
     ).subscribe({
       next: () => {
         this.invoices = this.invoices.filter(inv => inv._id !== invoiceId);
@@ -171,20 +162,12 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     });
   }
 
-  viewInvoice(invoice: Invoice) {
-    this.selectedInvoice = invoice;
-  }
+  viewInvoice(invoice: Invoice) { this.selectedInvoice = invoice; }
+  closeInvoicePreview() { this.selectedInvoice = null; }
+  printInvoice() { window.print(); }
 
-  closeInvoicePreview() {
-    this.selectedInvoice = null;
-  }
-
-  printInvoice() {
-    window.print();
-  }
-
-  getStatusBadgeClass(status: string): string {
-    const statusMap: { [key: string]: string } = {
+  getStatusBadgeClass(status: InvoiceStatus): string {
+    const statusMap: Record<InvoiceStatus, string> = {
       'draft': 'badge-info',
       'issued': 'badge-warning',
       'unpaid': 'badge-warning',
@@ -192,20 +175,11 @@ export class InvoicesComponent implements OnInit, OnDestroy {
       'cancelled': 'badge-danger',
       'void': 'badge-danger'
     };
-    return statusMap[status] || 'badge-default';
+    return statusMap[status] ?? 'badge-default';
   }
 
-  getTotalAmount(): number {
-    return this.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  }
+  getTotalAmount() { return this.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0); }
+  getTotalPaid() { return this.invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.totalAmount, 0); }
 
-  getTotalPaid(): number {
-    return this.invoices
-      .filter(inv => inv.status === 'paid')
-      .reduce((sum, inv) => sum + inv.totalAmount, 0);
-  }
-
-  get canManageInvoices() {
-    return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.ACCOUNT]);
-  }
+  get canManageInvoices() { return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.ACCOUNT]); }
 }

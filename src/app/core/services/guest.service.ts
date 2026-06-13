@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { API_BASE_URL } from '../api.config';
-import { ApiResponse } from './room.service';
+import { ApiResponse } from '@core/models/api-response.model';
 
 export type Guest = {
   _id: string;
