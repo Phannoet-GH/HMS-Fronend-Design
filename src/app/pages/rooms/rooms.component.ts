@@ -8,14 +8,15 @@ import { Room, RoomPayload, RoomStatus, RoomType } from '@core/models/room.model
 import { AuthService } from '@core/services/auth.service';
 import { ROLES } from '@core/services/role.service';
 
-const emptyRoomForm: RoomPayload = {
+// 1. Turned into a Factory Function to avoid state mutation reference sharing
+const createEmptyRoomForm = (): RoomPayload => ({
   roomNumber: '',
   type: 'single',
   pricePerNight: 0,
   capacity: 1,
   status: 'available',
   description: ''
-};
+});
 
 @Component({
   selector: 'app-rooms',
@@ -25,7 +26,7 @@ const emptyRoomForm: RoomPayload = {
 })
 export class RoomsComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
-  form: RoomPayload = { ...emptyRoomForm };
+  form: RoomPayload = createEmptyRoomForm(); // Initialized via factory
   selectedRoomId: string | null = null;
   isLoading = false;
   isSaving = false;
@@ -81,7 +82,6 @@ export class RoomsComponent implements OnInit, OnDestroy {
           this.router.navigate(['/login'], { queryParams: { returnUrl: '/rooms' } });
           return;
         }
-
         if (!silent) {
           this.errorMessage = err.name === 'TimeoutError'
             ? 'Room data timed out. Check that the backend is running, then refresh.'
@@ -110,6 +110,7 @@ export class RoomsComponent implements OnInit, OnDestroy {
 
     this.isSaving = true;
     this.errorMessage = '';
+    this.cdr.detectChanges();
 
     const payload: RoomPayload = {
       roomNumber: this.form.roomNumber.trim(),
@@ -126,7 +127,10 @@ export class RoomsComponent implements OnInit, OnDestroy {
 
     request.pipe(
       timeout(15000),
-      finalize(() => { this.isSaving = false; })
+      finalize(() => {
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      })
     ).subscribe({
       next: () => {
         this.resetForm();
@@ -137,12 +141,14 @@ export class RoomsComponent implements OnInit, OnDestroy {
         this.errorMessage = err.name === 'TimeoutError'
           ? 'Room save timed out. Check that the backend and MongoDB are running, then try again.'
           : err.error?.message || 'Unable to save room';
+        this.cdr.detectChanges();
       }
     });
   }
 
   editRoom(room: Room) {
     this.selectedRoomId = room._id;
+    // Direct value assignment decoupling
     this.form = {
       roomNumber: room.roomNumber,
       type: room.type,
@@ -152,6 +158,8 @@ export class RoomsComponent implements OnInit, OnDestroy {
       description: room.description || ''
     };
     this.showRoomForm = true;
+    this.errorMessage = '';
+    this.cdr.detectChanges(); // Ensure fields populate immediately
   }
 
   toggleRoomForm() {
@@ -161,6 +169,7 @@ export class RoomsComponent implements OnInit, OnDestroy {
     }
     this.showRoomForm = !this.showRoomForm;
     if (!this.showRoomForm) this.resetForm();
+    this.cdr.detectChanges();
   }
 
   deleteRoom(room: Room) {
@@ -169,24 +178,32 @@ export class RoomsComponent implements OnInit, OnDestroy {
       return;
     }
     this.roomPendingDelete = room;
+    this.cdr.detectChanges();
   }
 
   cancelDeleteRoom() {
     if (this.isDeleting) return;
     this.roomPendingDelete = null;
+    this.cdr.detectChanges();
   }
 
   confirmDeleteRoom() {
-    if (!this.roomPendingDelete || this.isDeleting) return;
+    if (!this.roomPendingDelete?._id || this.isDeleting) return;
 
+    const id = this.roomPendingDelete._id;
     this.isDeleting = true;
     this.errorMessage = '';
+    this.cdr.detectChanges();
 
-    this.roomService.delete(this.roomPendingDelete._id).pipe(
+    this.roomService.delete(id).pipe(
       timeout(15000),
-      finalize(() => { this.isDeleting = false; })
+      finalize(() => {
+        this.isDeleting = false;
+        this.cdr.detectChanges();
+      })
     ).subscribe({
       next: () => {
+        this.rooms = this.rooms.filter(r => r._id !== id);
         this.roomPendingDelete = null;
         this.loadRooms();
       },
@@ -194,13 +211,16 @@ export class RoomsComponent implements OnInit, OnDestroy {
         this.errorMessage = err.name === 'TimeoutError'
           ? 'Room delete timed out. Check that the backend and MongoDB are running, then try again.'
           : err.error?.message || 'Unable to delete room';
+        this.cdr.detectChanges();
       }
     });
   }
 
   resetForm() {
     this.selectedRoomId = null;
-    this.form = { ...emptyRoomForm };
+    this.form = createEmptyRoomForm(); // Safely clear using factory values
+    this.errorMessage = '';
+    this.cdr.detectChanges(); // Sync view template updates
   }
 
   get availableCount() { return this.rooms.filter(r => r.status === 'available').length; }

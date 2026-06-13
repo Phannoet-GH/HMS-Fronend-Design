@@ -3,8 +3,8 @@ import { ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
-import { ResourceRecord, ResourceService } from '../../core/services/resource.service';
-import { AuthService } from '../../core/services/auth.service';
+import { ResourceRecord, ResourceService } from '@core/services/resource.service';
+import { AuthService } from '@core/services/auth.service';
 
 export type ResourceField = {
   key: string;
@@ -12,6 +12,7 @@ export type ResourceField = {
   type?: 'text' | 'number' | 'date' | 'select' | 'textarea';
   required?: boolean;
   options?: string[];
+  onFieldChange?: (value: string, form: ResourceRecord) => Partial<ResourceRecord>;
 };
 
 export type ResourceColumn = {
@@ -61,7 +62,7 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.resetForm();
@@ -70,9 +71,7 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
+    clearInterval(this.refreshTimer);
   }
 
   loadRecords(silent = false) {
@@ -89,19 +88,16 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: (res) => {
-        this.records = Array.isArray(res.data) ? res.data : [];
+      next: (records) => {
+        this.records = records;
         this.errorMessage = '';
       },
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: this.router.url }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
           return;
         }
-
         if (!silent) {
           this.errorMessage = err.name === 'TimeoutError'
             ? `${this.config.title} data timed out. Check that the backend and MongoDB are running, then refresh.`
@@ -110,7 +106,13 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
       }
     });
   }
-
+  onFieldChange(field: ResourceField, value: string) {
+    if (field.onFieldChange) {
+      const updates = field.onFieldChange(value, this.form);
+      Object.assign(this.form, updates);
+      this.cdr.detectChanges();
+    }
+  }
   private autoRefresh() {
     if (this.showForm || this.isSaving || this.isLoading) return;
     this.loadRecords(true);
@@ -145,12 +147,9 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: this.router.url }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
           return;
         }
-
         this.errorMessage = err.name === 'TimeoutError'
           ? `${this.config.emptyLabel} save timed out. Check that the backend and MongoDB are running, then try again.`
           : err.error?.message || `Unable to save ${this.config.title.toLowerCase()}`;
@@ -198,12 +197,9 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
       error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: this.router.url }
-          });
+          this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
           return;
         }
-
         this.errorMessage = err.name === 'TimeoutError'
           ? `${this.config.emptyLabel} delete timed out. Check that the backend and MongoDB are running, then try again.`
           : err.error?.message || `Unable to delete ${this.config.title.toLowerCase()}`;
@@ -233,7 +229,6 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
   private buildPayload() {
     return this.config.fields.reduce<ResourceRecord>((payload, field) => {
       const value = this.form[field.key];
-
       if (field.type === 'number') {
         payload[field.key] = Number(value || 0);
       } else if (field.type === 'date') {
@@ -243,14 +238,11 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
       } else {
         payload[field.key] = value;
       }
-
       return payload;
     }, {});
   }
 
-  valueFor(record: ResourceRecord, column: ResourceColumn) {
-    return record[column.key] ?? '';
-  }
+  valueFor(record: ResourceRecord, column: ResourceColumn) { return record[column.key] ?? ''; }
 
   badgeClass(value: unknown) {
     const normalized = String(value).toLowerCase();

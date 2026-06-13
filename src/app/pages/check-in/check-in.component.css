@@ -71,10 +71,21 @@ p {
   font-weight: 500;
 }
 
-.available-card { border-left: 3px solid var(--green); }
-.active-card { border-left: 3px solid var(--accent); }
-.room-card { border-left: 3px solid var(--purple); }
-.total-card { border-left: 3px solid var(--gold); }
+.available-card {
+  border-left: 3px solid var(--green);
+}
+
+.active-card {
+  border-left: 3px solid var(--accent);
+}
+
+.room-card {
+  border-left: 3px solid var(--purple);
+}
+
+.total-card {
+  border-left: 3px solid var(--gold);
+}
 
 .checkin-grid {
   display: grid;
@@ -401,7 +412,7 @@ th {
   margin: 24px 0;
 }
 
-.invoice-meta > div {
+.invoice-meta>div {
   display: grid;
   gap: 5px;
 }
@@ -520,4 +531,70 @@ th {
   .form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s, background 0.2s;
+  width: fit-content;
+}
+
+.checkbox-label:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-hover);
+}
+
+.checkbox-label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  /* 1. Increased checkbox size */
+  width: 1.5rem;
+  height: 1.5rem;
+  /* 2. Set your default/uncheck border color variable here */
+  border: 2px solid var(--border-color);
+  border-radius: 0.375rem; /* Slightly larger radius to match the bigger box */
+  background: var(--bg-primary);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Changes border color when you hover over the entire label row */
+.checkbox-label:hover input[type="checkbox"] {
+  border-color: var(--accent-color);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: var(--accent-color);
+  /* 3. Border color matches accent when checked */
+  border-color: var(--accent-color); 
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: '\2714';
+  /* 4. Increased checkmark size proportionally */
+  font-size: 1rem; 
+  color: #fff;
+  font-weight: bold;
+}
+
+.checkbox-label input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }

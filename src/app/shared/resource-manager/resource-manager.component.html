@@ -29,19 +29,19 @@
 
       <label *ngFor="let field of config.fields">
         {{ field.label }}
-        <textarea
-          *ngIf="field.type === 'textarea'; else standardInput"
-          rows="4"
-          [name]="field.key"
-          [(ngModel)]="form[field.key]"
-          [required]="!!field.required"
-        ></textarea>
+        <textarea *ngIf="field.type === 'textarea'; else standardInput" rows="4" [name]="field.key"
+          [(ngModel)]="form[field.key]" [required]="!!field.required">
+        </textarea>
+
         <ng-template #standardInput>
-          <select *ngIf="field.type === 'select'; else plainInput" [name]="field.key" [(ngModel)]="form[field.key]" [required]="!!field.required">
+          <select *ngIf="field.type === 'select'; else plainInput" [name]="field.key" [(ngModel)]="form[field.key]"
+            (ngModelChange)="onFieldChange(field, $event)" [required]="!!field.required">
             <option *ngFor="let option of field.options" [value]="option">{{ option | titlecase }}</option>
           </select>
+
           <ng-template #plainInput>
-            <input [name]="field.key" [type]="field.type || 'text'" [(ngModel)]="form[field.key]" [required]="!!field.required" />
+            <input [name]="field.key" [type]="field.type || 'text'" [(ngModel)]="form[field.key]"
+              [required]="!!field.required" />
           </ng-template>
         </ng-template>
       </label>

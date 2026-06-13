@@ -1,36 +1,44 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { API_BASE_URL } from '../api.config';
+import { HttpClient } from '@angular/common/http';
+import { Observable, catchError, map, throwError } from 'rxjs';
+import { ApiResponse } from '@core/models/api-response.model';
+import { API_BASE_URL } from '@core/api.config';
 
-export type ApiResponse<T> = {
-  success?: boolean;
-  message: string;
-  data: T;
-};
-
-export type ResourceRecord = Record<string, any> & {
+export type ResourceRecord = {
   _id?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  [key: string]: any;
 };
-
 @Injectable({ providedIn: 'root' })
 export class ResourceService {
-  constructor(private http: HttpClient) {}
+  private readonly base = API_BASE_URL;
 
-  list<T extends ResourceRecord>(endpoint: string) {
-    return this.http.get<ApiResponse<T[]>>(`${API_BASE_URL}/${endpoint}`);
+  constructor(private http: HttpClient) { }
+
+  list(endpoint: string): Observable<ResourceRecord[]> {
+    return this.http.get<ApiResponse<ResourceRecord[]>>(`${this.base}/${endpoint}`).pipe(
+      map(res => res.data),
+      catchError(err => throwError(() => err))
+    );
   }
 
-  create<T extends ResourceRecord>(endpoint: string, data: T) {
-    return this.http.post<ApiResponse<T>>(`${API_BASE_URL}/${endpoint}`, data);
+  create(endpoint: string, payload: ResourceRecord): Observable<ResourceRecord> {
+    return this.http.post<ApiResponse<ResourceRecord>>(`${this.base}/${endpoint}`, payload).pipe(
+      map(res => res.data),
+      catchError(err => throwError(() => err))
+    );
   }
 
-  update<T extends ResourceRecord>(endpoint: string, id: string, data: T) {
-    return this.http.patch<ApiResponse<T>>(`${API_BASE_URL}/${endpoint}/${id}`, data);
+  update(endpoint: string, id: string, payload: ResourceRecord): Observable<ResourceRecord> {
+    return this.http.put<ApiResponse<ResourceRecord>>(`${this.base}/${endpoint}/${id}`, payload).pipe(
+      map(res => res.data),
+      catchError(err => throwError(() => err))
+    );
   }
 
-  delete(endpoint: string, id: string) {
-    return this.http.delete<void>(`${API_BASE_URL}/${endpoint}/${id}`);
+  delete(endpoint: string, id: string): Observable<void> {
+    return this.http.delete<ApiResponse<null>>(`${this.base}/${endpoint}/${id}`).pipe(
+      map(() => void 0),
+      catchError(err => throwError(() => err))
+    );
   }
 }

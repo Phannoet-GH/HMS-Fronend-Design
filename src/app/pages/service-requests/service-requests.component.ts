@@ -4,10 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { ResourceConfig, ResourceManagerComponent } from '../../shared/resource-manager/resource-manager.component';
 import { RoomService } from '@core/services/room.service';
-import { Room } from '@core/models/room.model';
 import { EmployeeService } from '@core/services/employee.service';
-import { Employee } from '@core/models/employee.model';
-import { ApiResponse } from '@core/models/api-response.model';
 
 @Component({
   selector: 'app-service-requests',
@@ -31,7 +28,7 @@ export class ServiceRequestsComponent implements OnInit {
     emptyLabel: 'Service Request',
     fields: [
       { key: 'roomNumber', label: 'Room Number', required: true, type: 'select', options: [] },
-      { key: 'type', label: 'Request Type', required: true },
+      { key: 'type', label: 'Request Type', required: true, type: 'select', options: ['Housekeeping', 'Maintenance', 'Food & Beverage', 'Technical', 'other'] },
       { key: 'priority', label: 'Priority', type: 'select', options: ['low', 'normal', 'high', 'urgent'] },
       { key: 'assignedTo', label: 'Assigned To', type: 'select', options: [] },
       { key: 'notes', label: 'Notes', type: 'textarea' },
@@ -59,25 +56,20 @@ export class ServiceRequestsComponent implements OnInit {
   private fetchFormOptions(): void {
     forkJoin({
       rooms: this.roomService.getAll({ status: 'available' }),
-      employees: this.employeeService.getAll({ status: 'active' })
+      employees: this.employeeService.getAll({ status: 'on-duty' })
     }).pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ rooms, employees }) => {
-          const roomList: Room[] = (rooms as unknown as ApiResponse<Room[]>).data ?? rooms as any;
-          const employeeList: Employee[] = Array.isArray(employees)
-            ? employees
-            : (employees as ApiResponse<Employee[]>).data;
-
           const roomField = this.config.fields.find(f => f.key === 'roomNumber');
           if (roomField) {
-            roomField.options = roomList.map(r => `${r.roomNumber} - ${r.type}`);
+            roomField.options = rooms.map(r => `${r.roomNumber} - ${r.type}`);
           }
 
           const assignedField = this.config.fields.find(f => f.key === 'assignedTo');
           if (assignedField) {
             assignedField.options = [
               'Unassigned',
-              ...employeeList.map(e => `${e.fullName} (${e.department})`)
+              ...employees.map(e => `${e.fullName} (${e.department})`)
             ];
           }
         },

@@ -5,7 +5,7 @@ export interface Employee {
     role: 'manager' | 'staff';
     shift: 'morning' | 'afternoon' | 'evening' | 'night';
     phone: string;
-    status: 'active' | 'off-duty' | 'on-leave' | 'terminated';
+    status: 'on-duty' | 'off-duty' | 'on-leave' | 'terminated';
     createdAt: string;
     updatedAt: string;
 }

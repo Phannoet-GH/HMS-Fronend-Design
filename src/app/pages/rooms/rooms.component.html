@@ -5,7 +5,7 @@
       <p>Manage room inventory, nightly rates, and room status.</p>
     </div>
     <button *ngIf="canManageRooms" type="button" class="btn" (click)="toggleRoomForm()">
-      {{ showRoomForm ? 'Close Form' : 'New Room' }}
+      {{ showRoomForm ? (selectedRoomId ? 'Cancel Edit' : 'Close Form') : 'New Room' }}
     </button>
   </header>
 
@@ -30,11 +30,12 @@
 
   <section class="content-grid full-width">
     <form *ngIf="showRoomForm && canManageRooms" #roomForm="ngForm" class="room-form" (ngSubmit)="saveRoom(roomForm)">
-      <h2>{{ selectedRoomId ? 'Edit Room' : 'Create Room' }}</h2>
+      <h2>{{ selectedRoomId ? 'Edit Room #' + form.roomNumber : 'Create Room' }}</h2>
 
       <label>
         Room Number
-        <input name="roomNumber" [(ngModel)]="form.roomNumber" autocomplete="off" required />
+        <input name="roomNumber" [(ngModel)]="form.roomNumber" autocomplete="off" required #roomNumField="ngModel" />
+        <span *ngIf="roomNumField.touched && roomNumField.invalid" class="field-error">Room number is required</span>
       </label>
 
       <label>
@@ -46,12 +47,16 @@
 
       <label>
         Price Per Night
-        <input name="pricePerNight" type="number" min="0" step="0.01" [(ngModel)]="form.pricePerNight" required />
+        <input name="pricePerNight" type="number" min="0" step="0.01" [(ngModel)]="form.pricePerNight" required
+          #priceField="ngModel" />
+        <span *ngIf="priceField.touched && priceField.invalid" class="field-error">A valid positive rate is
+          required</span>
       </label>
 
       <label>
         Capacity
-        <input name="capacity" type="number" min="1" [(ngModel)]="form.capacity" required />
+        <input name="capacity" type="number" min="1" [(ngModel)]="form.capacity" required #capacityField="ngModel" />
+        <span *ngIf="capacityField.touched && capacityField.invalid" class="field-error">Minimum capacity is 1</span>
       </label>
 
       <label>
@@ -66,13 +71,17 @@
         <textarea name="description" rows="3" [(ngModel)]="form.description"></textarea>
       </label>
 
+      <p *ngIf="roomForm.invalid && roomForm.touched" class="error">
+        Please fill out all required fields with valid values before updating.
+      </p>
+
       <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
       <div class="actions">
         <button type="submit" class="btn" [disabled]="isSaving || roomForm.invalid">
           {{ isSaving ? 'Saving...' : selectedRoomId ? 'Update Room' : 'Create Room' }}
         </button>
-        <button type="button" class="secondary" (click)="resetForm()">Clear</button>
+        <button type="button" class="secondary" (click)="resetForm(); toggleRoomForm()">Cancel</button>
       </div>
     </form>
 
@@ -95,14 +104,14 @@
               <th>Capacity</th>
               <th>Price</th>
               <th>Status</th>
-              <th *ngIf="canManageRooms"></th>
+              <th *ngIf="canManageRooms">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let room of rooms">
-              <td>{{ room.roomNumber }}</td>
+              <td><strong>{{ room.roomNumber }}</strong></td>
               <td>{{ room.type }}</td>
-              <td>{{ room.capacity }}</td>
+              <td>{{ room.capacity }} guests</td>
               <td>{{ room.pricePerNight | currency }}</td>
               <td>
                 <span class="status" [class]="room.status">{{ room.status }}</span>
@@ -119,16 +128,17 @@
   </section>
 
   <div *ngIf="roomPendingDelete" class="modal-backdrop" role="presentation" (click)="cancelDeleteRoom()">
-    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-room-title" (click)="$event.stopPropagation()">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-room-title"
+      (click)="$event.stopPropagation()">
       <h2 id="delete-room-title">Delete Room</h2>
       <p>
         Delete room <strong>{{ roomPendingDelete.roomNumber }}</strong>? This action cannot be undone.
       </p>
 
       <div class="modal-details">
-        <span>{{ roomPendingDelete.type }}</span>
-        <span>{{ roomPendingDelete.status }}</span>
-        <span>{{ roomPendingDelete.pricePerNight | currency }}</span>
+        <span>Type: <strong>{{ roomPendingDelete.type }}</strong></span>
+        <span>Status: <strong>{{ roomPendingDelete.status }}</strong></span>
+        <span>Price: <strong>{{ roomPendingDelete.pricePerNight | currency }}</strong></span>
       </div>
 
       <div class="modal-actions">
