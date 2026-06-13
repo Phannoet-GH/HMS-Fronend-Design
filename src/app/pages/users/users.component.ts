@@ -1,6 +1,7 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
+import { finalize, timeout } from 'rxjs';
 import { RoleService } from '../../core/services/role.service';
 import { User, UserPayload, UserService } from '../../core/services/user.service';
 
@@ -11,13 +12,15 @@ import { User, UserPayload, UserService } from '../../core/services/user.service
   templateUrl: './users.component.html',
   styleUrl: './users.component.css'
 })
-export class UsersComponent implements OnDestroy {
+export class UsersComponent implements OnInit, OnDestroy {
   users: User[] = [];
   form: UserPayload = { username: '', email: '', password: '', roleId: 'r3' };
   selectedId: string | null = null;
   showForm = false;
   isLoading = false;
   isSaving = false;
+  isDeleting = false;
+  userPendingDelete: User | null = null;
   errorMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
@@ -40,14 +43,22 @@ export class UsersComponent implements OnDestroy {
       this.errorMessage = '';
     }
 
-    this.userService.getUsers().subscribe({
-      next: (res) => {
-        this.users = res.data.users;
+    this.userService.getUsers().pipe(
+      timeout(10000),
+      finalize(() => {
         this.isLoading = false;
+      })
+    ).subscribe({
+      next: (res) => {
+        this.users = Array.isArray(res.data?.users) ? res.data.users : [];
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load users';
-        this.isLoading = false;
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? 'User data timed out. Check that the backend and MongoDB are running, then refresh.'
+            : err.error?.message || 'Unable to load users';
+        }
       }
     });
   }
@@ -57,28 +68,47 @@ export class UsersComponent implements OnDestroy {
     this.loadUsers(true);
   }
 
-  saveUser() {
+  saveUser(form: NgForm) {
+    if (form.invalid || this.isSaving) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
 
+    const username = this.form.username.trim();
+    const email = this.form.email.trim().toLowerCase();
+    const password = this.form.password?.trim() || '';
+
     const request = this.selectedId
       ? this.userService.updateUser(this.selectedId, {
-          username: this.form.username,
-          email: this.form.email,
+          username,
+          email,
           roleId: this.form.roleId
         })
-      : this.userService.createUser(this.form as UserPayload & { password: string });
+      : this.userService.createUser({
+          username,
+          email,
+          password,
+          roleId: this.form.roleId
+        });
 
-    request.subscribe({
-      next: () => {
+    request.pipe(
+      timeout(15000),
+      finalize(() => {
         this.isSaving = false;
+      })
+    ).subscribe({
+      next: () => {
         this.showForm = false;
         this.resetForm();
         this.loadUsers();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to save user';
-        this.isSaving = false;
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'User save timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to save user';
       }
     });
   }
@@ -95,12 +125,34 @@ export class UsersComponent implements OnDestroy {
   }
 
   deleteUser(user: User) {
-    if (!confirm(`Delete ${user.username}?`)) return;
+    this.userPendingDelete = user;
+  }
 
-    this.userService.deleteUser(user._id).subscribe({
-      next: () => this.loadUsers(),
+  cancelDeleteUser() {
+    if (this.isDeleting) return;
+    this.userPendingDelete = null;
+  }
+
+  confirmDeleteUser() {
+    if (!this.userPendingDelete || this.isDeleting) return;
+
+    this.isDeleting = true;
+    this.errorMessage = '';
+
+    this.userService.deleteUser(this.userPendingDelete._id).pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isDeleting = false;
+      })
+    ).subscribe({
+      next: () => {
+        this.userPendingDelete = null;
+        this.loadUsers();
+      },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to delete user';
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'User delete timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to delete user';
       }
     });
   }

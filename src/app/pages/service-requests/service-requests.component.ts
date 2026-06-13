@@ -18,7 +18,7 @@ export class ServiceRequestsComponent {
     emptyLabel: 'Service Request',
     fields: [
       { key: 'roomNumber', label: 'Room Number', required: true },
-      { key: 'guestName', label: 'Guest Name' },
+      { key: 'guestName', label: 'Guest Name', required: true },
       { key: 'type', label: 'Request Type', required: true },
       { key: 'priority', label: 'Priority', type: 'select', options: ['low', 'normal', 'high', 'urgent'] },
       { key: 'assignedTo', label: 'Assigned To' },
@@ -30,6 +30,7 @@ export class ServiceRequestsComponent {
       { key: 'guestName', label: 'Guest' },
       { key: 'type', label: 'Type' },
       { key: 'priority', label: 'Priority', type: 'badge' },
+      { key: 'assignedTo', label: 'Assigned To' },
       { key: 'status', label: 'Status', type: 'badge' }
     ],
     summaries: [

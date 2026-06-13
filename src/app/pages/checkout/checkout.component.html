@@ -24,8 +24,8 @@
       <strong>{{ activeBookings.length }}</strong>
     </article>
     <article class="summary-card cleaning-card">
-      <span>Selected Total</span>
-      <strong>{{ totalAmount | currency }}</strong>
+      <span>Amount Due</span>
+      <strong>{{ amountDue | currency }}</strong>
     </article>
   </section>
 
@@ -106,6 +106,12 @@
           </label>
         </div>
 
+        <div class="linked-invoice" *ngIf="selectedInvoice">
+          <span>Linked Invoice</span>
+          <strong>{{ selectedInvoice.invoiceNumber }}</strong>
+          <small>{{ selectedInvoice.status | titlecase }} - {{ selectedInvoice.totalAmount | currency }}</small>
+        </div>
+
         <label class="wide">
           Notes
           <textarea name="notes" rows="4" placeholder="Room inspection notes or guest feedback" [(ngModel)]="notes"></textarea>
@@ -154,10 +160,15 @@
           <span>Total Amount</span>
           <strong>{{ totalAmount | currency }}</strong>
         </div>
+
+        <div class="billing-item" *ngIf="selectedInvoice">
+          <span>Invoice Status</span>
+          <strong>{{ selectedInvoice.status | titlecase }}</strong>
+        </div>
       </div>
 
       <div class="status-box paid">
-        {{ selectedBooking ? 'Invoice will be created and marked paid' : 'Select a checked-in stay to settle' }}
+        {{ selectedBooking ? (selectedInvoice ? 'Existing invoice will be settled and the room will become available' : 'Invoice will be created, paid, and the room will become available') : 'Select a checked-in stay to settle' }}
       </div>
     </aside>
   </section>
@@ -195,4 +206,75 @@
       </table>
     </div>
   </section>
+
+  <div *ngIf="checkoutInvoice" class="receipt-backdrop" role="presentation">
+    <section class="receipt-modal printable-receipt" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
+      <div class="receipt-toolbar no-print">
+        <h2 id="receipt-title">Check-Out Complete</h2>
+        <div class="receipt-actions">
+          <button type="button" class="secondary" (click)="closeReceipt()">Close</button>
+          <button type="button" class="btn" (click)="printReceipt()">Print Receipt</button>
+        </div>
+      </div>
+
+      <div class="receipt-document">
+        <header class="receipt-header">
+          <div>
+            <h2>Grand Meridian</h2>
+            <p>Checkout Receipt</p>
+          </div>
+          <div class="receipt-number">
+            <span>Invoice</span>
+            <strong>{{ checkoutInvoice.invoiceNumber }}</strong>
+          </div>
+        </header>
+
+        <section class="receipt-meta">
+          <div>
+            <span>Guest</span>
+            <strong>{{ checkoutInvoice.guest.fullName }}</strong>
+            <p>{{ checkoutInvoice.guest.phone }}</p>
+          </div>
+          <div>
+            <span>Room</span>
+            <strong>{{ checkoutInvoice.room.roomNumber }} - {{ checkoutInvoice.room.type }}</strong>
+            <p>{{ checkoutInvoice.checkInDate | date: 'dd MMM yyyy' }} to {{ checkoutInvoice.checkOutDate | date: 'dd MMM yyyy' }}</p>
+            <p>{{ checkoutInvoice.paymentMethod || paymentMethod }}</p>
+          </div>
+        </section>
+
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Room Charges</td>
+              <td>{{ checkoutInvoice.roomCharges | currency }}</td>
+            </tr>
+            <tr *ngFor="let charge of checkoutInvoice.additionalCharges">
+              <td>{{ charge.description }}</td>
+              <td>{{ charge.amount | currency }}</td>
+            </tr>
+            <tr>
+              <td>Tax</td>
+              <td>{{ checkoutInvoice.taxAmount | currency }}</td>
+            </tr>
+            <tr class="receipt-total">
+              <td>Total Paid</td>
+              <td>{{ checkoutInvoice.totalAmount | currency }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <footer class="receipt-footer">
+          <span>Status: {{ checkoutInvoice.status | titlecase }}</span>
+          <span>Payment Date: {{ checkoutInvoice.paymentDate || checkoutInvoice.updatedAt | date: 'dd MMM yyyy' }}</span>
+        </footer>
+      </div>
+    </section>
+  </div>
 </main>

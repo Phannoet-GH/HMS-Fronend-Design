@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
+import { finalize, forkJoin, timeout } from 'rxjs';
 import { BookingService, Booking } from '../../core/services/booking.service';
 import { RoomService, Room } from '../../core/services/room.service';
 import { InvoiceService, Invoice } from '../../core/services/invoice.service';
@@ -19,6 +20,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
   invoices: Invoice[] = [];
   isLoading = false;
+  errorMessage = '';
   selectedDateRange = '30days';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
@@ -61,28 +63,32 @@ export class ReportsComponent implements OnInit, OnDestroy {
   loadReportData(silent = false) {
     if (!silent) {
       this.isLoading = true;
+      this.errorMessage = '';
     }
 
-    this.bookingService.getBookings().subscribe({
-      next: (res) => {
-        this.bookings = res.data;
+    forkJoin({
+      bookings: this.bookingService.getBookings(),
+      rooms: this.roomService.getRooms(),
+      invoices: this.invoiceService.getInvoices()
+    }).pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isLoading = false;
+      })
+    ).subscribe({
+      next: ({ bookings, rooms, invoices }) => {
+        this.bookings = Array.isArray(bookings.data) ? bookings.data : [];
+        this.rooms = Array.isArray(rooms.data) ? rooms.data : [];
+        this.invoices = Array.isArray(invoices.data?.invoices) ? invoices.data.invoices : [];
+        this.errorMessage = '';
         this.initializeCharts();
-        this.isLoading = false;
       },
-      error: () => {
-        this.isLoading = false;
-      }
-    });
-
-    this.roomService.getRooms().subscribe({
-      next: (res) => {
-        this.rooms = res.data;
-      }
-    });
-
-    this.invoiceService.getInvoices().subscribe({
-      next: (res) => {
-        this.invoices = res.data.invoices;
+      error: (err) => {
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? 'Report data timed out. Check that the backend and MongoDB are running, then refresh.'
+            : err.error?.message || 'Unable to load reports';
+        }
       }
     });
   }

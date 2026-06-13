@@ -103,6 +103,41 @@ textarea {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
+select {
+  min-height: 48px;
+  padding-right: 42px;
+  appearance: none;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08));
+  background-position:
+    calc(100% - 20px) 50%,
+    calc(100% - 14px) 50%,
+    calc(100% - 38px) 50%;
+  background-size:
+    6px 6px,
+    6px 6px,
+    1px 22px;
+  background-repeat: no-repeat;
+}
+
+select:hover {
+  border-color: var(--border-hover);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+select option {
+  background: #111827;
+  color: var(--text);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: rgba(255, 255, 255, 0.45);
@@ -114,10 +149,6 @@ textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-dim);
   background: rgba(255, 255, 255, 0.08);
-}
-
-select {
-  appearance: none;
 }
 
 button,

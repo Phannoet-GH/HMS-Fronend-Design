@@ -1,7 +1,10 @@
 import { CommonModule, CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { ResourceRecord, ResourceService } from '../../core/services/resource.service';
+import { AuthService } from '../../core/services/auth.service';
 
 export type ResourceField = {
   key: string;
@@ -48,10 +51,17 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
   showForm = false;
   isLoading = false;
   isSaving = false;
+  isDeleting = false;
+  recordPendingDelete: ResourceRecord | null = null;
   errorMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
-  constructor(private resourceService: ResourceService) {}
+  constructor(
+    private resourceService: ResourceService,
+    private authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.resetForm();
@@ -69,16 +79,34 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
     if (!silent) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.cdr.detectChanges();
     }
 
-    this.resourceService.list(this.config.endpoint).subscribe({
-      next: (res) => {
-        this.records = res.data;
+    this.resourceService.list(this.config.endpoint).pipe(
+      timeout(10000),
+      finalize(() => {
         this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (res) => {
+        this.records = Array.isArray(res.data) ? res.data : [];
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || `Unable to load ${this.config.title.toLowerCase()}`;
-        this.isLoading = false;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: this.router.url }
+          });
+          return;
+        }
+
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? `${this.config.title} data timed out. Check that the backend and MongoDB are running, then refresh.`
+            : err.error?.message || `Unable to load ${this.config.title.toLowerCase()}`;
+        }
       }
     });
   }
@@ -88,24 +116,44 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
     this.loadRecords(true);
   }
 
-  saveRecord() {
+  saveRecord(form: NgForm) {
+    if (form.invalid || this.isSaving) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
+    const payload = this.buildPayload();
 
     const request = this.selectedId
-      ? this.resourceService.update(this.config.endpoint, this.selectedId, this.form)
-      : this.resourceService.create(this.config.endpoint, this.form);
+      ? this.resourceService.update(this.config.endpoint, this.selectedId, payload)
+      : this.resourceService.create(this.config.endpoint, payload);
 
-    request.subscribe({
-      next: () => {
+    request.pipe(
+      timeout(15000),
+      finalize(() => {
         this.isSaving = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: () => {
         this.showForm = false;
         this.resetForm();
         this.loadRecords();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || `Unable to save ${this.config.title.toLowerCase()}`;
-        this.isSaving = false;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: this.router.url }
+          });
+          return;
+        }
+
+        this.errorMessage = err.name === 'TimeoutError'
+          ? `${this.config.emptyLabel} save timed out. Check that the backend and MongoDB are running, then try again.`
+          : err.error?.message || `Unable to save ${this.config.title.toLowerCase()}`;
       }
     });
   }
@@ -113,19 +161,52 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
   editRecord(record: ResourceRecord) {
     this.selectedId = record._id || null;
     this.form = this.config.fields.reduce<ResourceRecord>((acc, field) => {
-      acc[field.key] = record[field.key] ?? this.defaultValue(field);
+      const value = record[field.key] ?? this.defaultValue(field);
+      acc[field.key] = field.type === 'date' && value ? String(value).slice(0, 10) : value;
       return acc;
     }, {});
     this.showForm = true;
   }
 
   deleteRecord(record: ResourceRecord) {
-    if (!record._id || !confirm(`Delete ${this.primaryValue(record)}?`)) return;
+    if (!record._id) return;
+    this.recordPendingDelete = record;
+  }
 
-    this.resourceService.delete(this.config.endpoint, record._id).subscribe({
-      next: () => this.loadRecords(),
+  cancelDelete() {
+    if (this.isDeleting) return;
+    this.recordPendingDelete = null;
+  }
+
+  confirmDelete() {
+    if (!this.recordPendingDelete?._id || this.isDeleting) return;
+
+    this.isDeleting = true;
+    this.errorMessage = '';
+
+    this.resourceService.delete(this.config.endpoint, this.recordPendingDelete._id).pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isDeleting = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: () => {
+        this.recordPendingDelete = null;
+        this.loadRecords();
+      },
       error: (err) => {
-        this.errorMessage = err.error?.message || `Unable to delete ${this.config.title.toLowerCase()}`;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: this.router.url }
+          });
+          return;
+        }
+
+        this.errorMessage = err.name === 'TimeoutError'
+          ? `${this.config.emptyLabel} delete timed out. Check that the backend and MongoDB are running, then try again.`
+          : err.error?.message || `Unable to delete ${this.config.title.toLowerCase()}`;
       }
     });
   }
@@ -147,6 +228,24 @@ export class ResourceManagerComponent implements OnInit, OnDestroy {
     if (field.type === 'number') return 0;
     if (field.type === 'select') return field.options?.[0] || '';
     return '';
+  }
+
+  private buildPayload() {
+    return this.config.fields.reduce<ResourceRecord>((payload, field) => {
+      const value = this.form[field.key];
+
+      if (field.type === 'number') {
+        payload[field.key] = Number(value || 0);
+      } else if (field.type === 'date') {
+        if (value) payload[field.key] = value;
+      } else if (typeof value === 'string') {
+        payload[field.key] = value.trim();
+      } else {
+        payload[field.key] = value;
+      }
+
+      return payload;
+    }, {});
   }
 
   valueFor(record: ResourceRecord, column: ResourceColumn) {

@@ -102,7 +102,7 @@ export const routes: Routes = [
         path: 'room-services',
         component: RoomServicesComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       },
 
       {

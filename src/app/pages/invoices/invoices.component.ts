@@ -1,8 +1,11 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { Invoice, InvoiceService } from '../../core/services/invoice.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ROLES } from '../../core/services/role.service';
 
 @Component({
   selector: 'app-invoices',
@@ -16,9 +19,18 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
   statusFilter = 'all';
+  selectedInvoice: Invoice | null = null;
+  invoicePendingDelete: Invoice | null = null;
+  isUpdating = false;
+  isDeleting = false;
   private refreshTimer?: ReturnType<typeof setInterval>;
 
-  constructor(private invoiceService: InvoiceService) {}
+  constructor(
+    private invoiceService: InvoiceService,
+    private authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.loadInvoices();
@@ -35,18 +47,35 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     if (!silent) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.cdr.detectChanges();
     }
 
     const filters = this.statusFilter !== 'all' ? { status: this.statusFilter } : undefined;
 
-    this.invoiceService.getInvoices(filters).subscribe({
-      next: (res) => {
-        this.invoices = res.data.invoices;
+    this.invoiceService.getInvoices(filters).pipe(
+      timeout(10000),
+      finalize(() => {
         this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (res) => {
+        this.invoices = Array.isArray(res.data?.invoices) ? res.data.invoices : [];
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Failed to load invoices';
-        this.isLoading = false;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: '/invoices' }
+          });
+          return;
+        }
+
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? 'Invoice data timed out. Check that the backend and MongoDB are running, then refresh.'
+            : err.error?.message || 'Failed to load invoices';
+        }
       }
     });
   }
@@ -61,8 +90,16 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   }
 
   markAsPaid(invoiceId: string) {
+    if (!this.canManageInvoices || this.isUpdating) return;
+
+    this.isUpdating = true;
     const paymentDate = new Date().toISOString();
-    this.invoiceService.updateInvoiceStatus(invoiceId, 'paid', paymentDate).subscribe({
+    this.invoiceService.updateInvoiceStatus(invoiceId, 'paid', paymentDate).pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isUpdating = false;
+      })
+    ).subscribe({
       next: (res) => {
         const index = this.invoices.findIndex(inv => inv._id === invoiceId);
         if (index > -1) {
@@ -78,7 +115,15 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   }
 
   markAsIssued(invoiceId: string) {
-    this.invoiceService.updateInvoiceStatus(invoiceId, 'issued').subscribe({
+    if (!this.canManageInvoices || this.isUpdating) return;
+
+    this.isUpdating = true;
+    this.invoiceService.updateInvoiceStatus(invoiceId, 'issued').pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isUpdating = false;
+      })
+    ).subscribe({
       next: (res) => {
         const index = this.invoices.findIndex(inv => inv._id === invoiceId);
         if (index > -1) {
@@ -94,18 +139,48 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   }
 
   deleteInvoice(invoiceId: string) {
-    if (confirm('Are you sure you want to delete this invoice?')) {
-      this.invoiceService.deleteInvoice(invoiceId).subscribe({
-        next: () => {
-          this.invoices = this.invoices.filter(inv => inv._id !== invoiceId);
-          this.successMessage = 'Invoice deleted successfully';
-          setTimeout(() => this.successMessage = '', 3000);
-        },
-        error: (err) => {
-          this.errorMessage = err.error?.message || 'Failed to delete invoice';
-        }
-      });
-    }
+    if (!this.canManageInvoices) return;
+    this.invoicePendingDelete = this.invoices.find((invoice) => invoice._id === invoiceId) || null;
+  }
+
+  cancelDeleteInvoice() {
+    if (this.isDeleting) return;
+    this.invoicePendingDelete = null;
+  }
+
+  confirmDeleteInvoice() {
+    if (!this.invoicePendingDelete || this.isDeleting) return;
+
+    const invoiceId = this.invoicePendingDelete._id;
+    this.isDeleting = true;
+    this.invoiceService.deleteInvoice(invoiceId).pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isDeleting = false;
+      })
+    ).subscribe({
+      next: () => {
+        this.invoices = this.invoices.filter(inv => inv._id !== invoiceId);
+        this.invoicePendingDelete = null;
+        this.successMessage = 'Invoice deleted successfully';
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Failed to delete invoice';
+      }
+    });
+  }
+
+  viewInvoice(invoice: Invoice) {
+    this.selectedInvoice = invoice;
+  }
+
+  closeInvoicePreview() {
+    this.selectedInvoice = null;
+  }
+
+  printInvoice() {
+    window.print();
   }
 
   getStatusBadgeClass(status: string): string {
@@ -128,5 +203,9 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     return this.invoices
       .filter(inv => inv.status === 'paid')
       .reduce((sum, inv) => sum + inv.totalAmount, 0);
+  }
+
+  get canManageInvoices() {
+    return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.ACCOUNT]);
   }
 }

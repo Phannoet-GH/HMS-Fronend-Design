@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
+import { finalize, timeout } from 'rxjs';
 import { Guest, GuestPayload, GuestService } from '../../core/services/guest.service';
 
 const emptyGuestForm: GuestPayload = {
@@ -24,7 +25,9 @@ export class GuestsComponent implements OnInit, OnDestroy {
   search = '';
   isLoading = false;
   isSaving = false;
+  isDeleting = false;
   showGuestForm = false;
+  guestPendingDelete: Guest | null = null;
   errorMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
@@ -47,14 +50,22 @@ export class GuestsComponent implements OnInit, OnDestroy {
       this.errorMessage = '';
     }
 
-    this.guestService.getGuests(this.search).subscribe({
-      next: (res) => {
-        this.guests = res.data;
+    this.guestService.getGuests(this.search.trim()).pipe(
+      timeout(10000),
+      finalize(() => {
         this.isLoading = false;
+      })
+    ).subscribe({
+      next: (res) => {
+        this.guests = Array.isArray(res.data) ? res.data : [];
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load guests';
-        this.isLoading = false;
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? 'Guest data timed out. Check that the backend and MongoDB are running, then refresh.'
+            : err.error?.message || 'Unable to load guests';
+        }
       }
     });
   }
@@ -64,23 +75,42 @@ export class GuestsComponent implements OnInit, OnDestroy {
     this.loadGuests(true);
   }
 
-  saveGuest() {
+  saveGuest(form: NgForm) {
+    if (form.invalid || this.isSaving) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
     this.isSaving = true;
     this.errorMessage = '';
 
-    const request = this.selectedGuestId
-      ? this.guestService.updateGuest(this.selectedGuestId, this.form)
-      : this.guestService.createGuest(this.form);
+    const payload: GuestPayload = {
+      fullName: this.form.fullName.trim(),
+      phone: this.form.phone.trim(),
+      email: this.form.email?.trim().toLowerCase() || '',
+      idNumber: this.form.idNumber?.trim() || '',
+      address: this.form.address?.trim() || ''
+    };
 
-    request.subscribe({
+    const request = this.selectedGuestId
+      ? this.guestService.updateGuest(this.selectedGuestId, payload)
+      : this.guestService.createGuest(payload);
+
+    request.pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isSaving = false;
+      })
+    ).subscribe({
       next: () => {
         this.resetForm();
+        this.showGuestForm = false;
         this.loadGuests();
-        this.isSaving = false;
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to save guest';
-        this.isSaving = false;
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Guest save timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to save guest';
       }
     });
   }
@@ -105,12 +135,34 @@ export class GuestsComponent implements OnInit, OnDestroy {
   }
 
   deleteGuest(guest: Guest) {
-    if (!confirm(`Delete guest ${guest.fullName}?`)) return;
+    this.guestPendingDelete = guest;
+  }
 
-    this.guestService.deleteGuest(guest._id).subscribe({
-      next: () => this.loadGuests(),
+  cancelDeleteGuest() {
+    if (this.isDeleting) return;
+    this.guestPendingDelete = null;
+  }
+
+  confirmDeleteGuest() {
+    if (!this.guestPendingDelete || this.isDeleting) return;
+
+    this.isDeleting = true;
+    this.errorMessage = '';
+
+    this.guestService.deleteGuest(this.guestPendingDelete._id).pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isDeleting = false;
+      })
+    ).subscribe({
+      next: () => {
+        this.guestPendingDelete = null;
+        this.loadGuests();
+      },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to delete guest';
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Guest delete timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to delete guest';
       }
     });
   }

@@ -36,7 +36,7 @@ export class SidebarComponent implements OnInit {
         { id: 'checkin', label: 'Check In', icon: 'I', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
         { id: 'checkout', label: 'Check Out', icon: 'O', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
         { id: 'bookings', label: 'Bookings', icon: 'B', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
-        { id: 'room-services', label: 'Room Services', icon: 'S', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] },
+        { id: 'room-services', label: 'Room Services', icon: 'S', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] },
         { id: 'service-requests', label: 'Service Requests', icon: 'Q', roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
       ]
     },

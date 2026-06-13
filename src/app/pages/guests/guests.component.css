@@ -121,6 +121,45 @@ textarea {
   color: var(--red);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 11, 18, 0.72);
+}
+
+.confirm-modal {
+  width: min(420px, 100%);
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.confirm-modal h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.confirm-modal p {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+.confirm-modal strong {
+  color: var(--text);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 960px) {
   .content-grid {
     grid-template-columns: 1fr;
