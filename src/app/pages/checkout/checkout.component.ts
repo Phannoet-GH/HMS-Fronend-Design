@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { switchMap } from 'rxjs';
+import { forkJoin, finalize, switchMap, timeout } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Booking, BookingService } from '../../core/services/booking.service';
 import { Invoice, InvoiceService } from '../../core/services/invoice.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-checkout',
@@ -23,16 +25,23 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   notes = '';
   isLoading = false;
   isSaving = false;
+  checkoutInvoice: Invoice | null = null;
   errorMessage = '';
   successMessage = '';
+  private requestedBookingId = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private bookingService: BookingService,
-    private invoiceService: InvoiceService
+    private invoiceService: InvoiceService,
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
+    this.requestedBookingId = this.route.snapshot.queryParamMap.get('bookingId') || '';
     this.loadData();
     this.refreshTimer = setInterval(() => this.autoRefresh(), 15000);
   }
@@ -47,19 +56,32 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (!silent) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.cdr.detectChanges();
     }
 
-    this.bookingService.getBookings({ status: 'checked_in' }).subscribe({
-      next: (res) => {
-        this.activeBookings = res.data;
-        if (!this.selectedBookingId && this.activeBookings.length > 0) {
+    forkJoin({
+      bookings: this.bookingService.getBookings({ status: 'checked_in' }),
+      invoices: this.invoiceService.getInvoices({ limit: 100 })
+    }).pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: ({ bookings, invoices }) => {
+        this.activeBookings = Array.isArray(bookings.data) ? bookings.data : [];
+        this.invoices = Array.isArray(invoices.data?.invoices) ? invoices.data.invoices : [];
+
+        if (this.requestedBookingId && this.activeBookings.some((booking) => booking._id === this.requestedBookingId)) {
+          this.selectedBookingId = this.requestedBookingId;
+          this.requestedBookingId = '';
+        } else if (!this.selectedBookingId && this.activeBookings.length > 0) {
           this.selectedBookingId = this.activeBookings[0]._id;
         }
-        this.loadInvoices();
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load active stays';
-        this.isLoading = false;
+        this.handleLoadError(err, silent);
       }
     });
   }
@@ -69,17 +91,20 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.loadData(true);
   }
 
-  loadInvoices() {
-    this.invoiceService.getInvoices().subscribe({
-      next: (res) => {
-        this.invoices = res.data.invoices;
-        this.isLoading = false;
-      },
-      error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load invoices';
-        this.isLoading = false;
-      }
-    });
+  private handleLoadError(err: any, silent = false) {
+    if (err.status === 401) {
+      this.authService.logout();
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: '/checkout' }
+      });
+      return;
+    }
+
+    if (!silent) {
+      this.errorMessage = err.name === 'TimeoutError'
+        ? 'Checkout data timed out. Check that the backend and MongoDB are running, then refresh.'
+        : err.error?.message || 'Unable to load checkout data';
+    }
   }
 
   selectBooking(id: string) {
@@ -103,36 +128,62 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.isSaving = true;
     this.errorMessage = '';
     this.successMessage = '';
+    this.checkoutInvoice = null;
 
     const additionalCharges = this.serviceCharge > 0
       ? [{ description: 'Service Charges', amount: this.serviceCharge }]
       : [];
 
-    this.invoiceService.createInvoice({
-      bookingId: booking._id,
+    const existingInvoice = this.getInvoiceForBooking(booking._id);
+    const invoicePayload = {
       numberOfNights: this.totalNights,
       roomCharges: this.roomCharges,
       additionalCharges,
       taxPercentage: this.taxPercentage,
       notes: this.notes || this.roomCondition
-    }).pipe(
-      switchMap((res) => this.invoiceService.updateInvoiceStatus(
-        res.data._id,
+    };
+
+    const invoiceRequest = existingInvoice
+      ? this.invoiceService.updateInvoice(existingInvoice._id, invoicePayload)
+      : this.invoiceService.createInvoice({
+          bookingId: booking._id,
+          ...invoicePayload
+        });
+
+    invoiceRequest.pipe(
+      timeout(15000),
+      switchMap((invoiceRes) => this.invoiceService.updateInvoiceStatus(
+        invoiceRes.data._id,
         'paid',
         new Date().toISOString(),
         this.paymentMethod
       )),
-      switchMap(() => this.bookingService.updateBookingStatus(booking._id, 'checked_out'))
+      switchMap((paidInvoiceRes) => {
+        this.checkoutInvoice = paidInvoiceRes.data;
+        return this.bookingService.updateBookingStatus(booking._id, 'checked_out');
+      }),
+      finalize(() => {
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      })
     ).subscribe({
       next: () => {
-        this.successMessage = 'Guest checked out and invoice paid successfully';
+        this.successMessage = 'Guest checked out, invoice settled, and room released';
         this.resetForm();
         this.loadData();
-        this.isSaving = false;
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to complete check-out';
-        this.isSaving = false;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: '/checkout' }
+          });
+          return;
+        }
+
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Check-out timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to complete check-out';
       }
     });
   }
@@ -145,6 +196,14 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.serviceCharge = 0;
     this.taxPercentage = 0;
     this.notes = '';
+  }
+
+  closeReceipt() {
+    this.checkoutInvoice = null;
+  }
+
+  printReceipt() {
+    window.print();
   }
 
   get filteredBookings() {
@@ -160,6 +219,17 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   get selectedBooking() {
     return this.activeBookings.find((booking) => booking._id === this.selectedBookingId) || null;
+  }
+
+  get selectedInvoice() {
+    return this.selectedBooking ? this.getInvoiceForBooking(this.selectedBooking._id) : null;
+  }
+
+  getInvoiceForBooking(bookingId: string) {
+    return this.invoices.find((invoice) => {
+      const booking = invoice.booking as any;
+      return booking === bookingId || booking?._id === bookingId;
+    }) || null;
   }
 
   get selectedRoomLabel() {
@@ -192,6 +262,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   get totalAmount() {
     return this.roomCharges + this.serviceCharge + this.taxAmount;
+  }
+
+  get amountDue() {
+    return this.selectedInvoice?.status === 'paid' ? 0 : this.totalAmount;
   }
 
   get recentCheckOuts() {

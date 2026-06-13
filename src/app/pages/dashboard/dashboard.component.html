@@ -80,15 +80,15 @@
         </div>
         <div class="activity-list">
           <div class="activity-item">
-            <span class="activity-icon">→</span>
+            <span class="activity-icon">IN</span>
             <span class="activity-text">{{ todayCheckIns }} Check-ins Today</span>
           </div>
           <div class="activity-item">
-            <span class="activity-icon">←</span>
+            <span class="activity-icon">OUT</span>
             <span class="activity-text">{{ todayCheckOuts }} Check-outs Today</span>
           </div>
           <div class="activity-item">
-            <span class="activity-icon">📅</span>
+            <span class="activity-icon">BK</span>
             <span class="activity-text">{{ totalBookings }} Total Bookings</span>
           </div>
         </div>
@@ -147,7 +147,7 @@
           <p *ngIf="rooms.length === 0" class="muted">No rooms added yet.</p>
         </div>
         <div class="panel-footer">
-          <a routerLink="/rooms" class="btn-link">Manage All Rooms →</a>
+          <a routerLink="/rooms" class="btn-link">Manage All Rooms</a>
         </div>
       </article>
 
@@ -175,7 +175,7 @@
           <p *ngIf="recentBookings.length === 0" class="muted">No bookings recorded yet.</p>
         </div>
         <div class="panel-footer">
-          <a routerLink="/bookings" class="btn-link">View All Bookings →</a>
+          <a routerLink="/bookings" class="btn-link">View All Bookings</a>
         </div>
       </article>
     </section>
@@ -183,19 +183,19 @@
     <!-- Quick Actions -->
     <section class="quick-actions">
       <button type="button" routerLink="/bookings" class="action-card">
-        <span class="action-icon">📝</span>
+        <span class="action-icon">BK</span>
         <span class="action-label">Create Booking</span>
       </button>
       <a routerLink="/rooms" class="action-card">
-        <span class="action-icon">🏨</span>
+        <span class="action-icon">RM</span>
         <span class="action-label">Manage Rooms</span>
       </a>
       <a routerLink="/guests" class="action-card">
-        <span class="action-icon">👥</span>
+        <span class="action-icon">GS</span>
         <span class="action-label">Guest List</span>
       </a>
-      <a routerLink="/dashboard" class="action-card">
-        <span class="action-icon">📊</span>
+      <a routerLink="/reports" class="action-card">
+        <span class="action-icon">RP</span>
         <span class="action-label">Reports</span>
       </a>
     </section>

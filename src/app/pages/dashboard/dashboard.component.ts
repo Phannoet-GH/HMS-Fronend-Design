@@ -1,11 +1,13 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { finalize, forkJoin, timeout } from 'rxjs';
 import { Booking, BookingService } from '../../core/services/booking.service';
 import { Room, RoomService } from '../../core/services/room.service';
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 import { OccupancyChartComponent } from '../../shared/occupancy-chart/occupancy-chart.component';
 import { RevenueChartComponent } from '../../shared/revenue-chart/revenue-chart.component';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -22,7 +24,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private roomService: RoomService,
-    private bookingService: BookingService
+    private bookingService: BookingService,
+    private authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -40,16 +45,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!silent) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.cdr.detectChanges();
     }
 
-    this.roomService.getRooms().subscribe({
-      next: (roomRes) => {
-        this.rooms = roomRes.data;
-        this.loadBookings();
+    forkJoin({
+      rooms: this.roomService.getRooms(),
+      bookings: this.bookingService.getBookings()
+    }).pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: ({ rooms, bookings }) => {
+        this.rooms = Array.isArray(rooms.data) ? rooms.data : [];
+        this.bookings = Array.isArray(bookings.data) ? bookings.data : [];
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load dashboard';
-        this.isLoading = false;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: '/dashboard' }
+          });
+          return;
+        }
+
+        if (!silent) {
+          this.errorMessage = err.name === 'TimeoutError'
+            ? 'Dashboard data timed out. Check that the backend and MongoDB are running, then refresh.'
+            : err.error?.message || 'Unable to load dashboard';
+        }
       }
     });
   }
@@ -57,19 +84,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private autoRefresh() {
     if (this.isLoading) return;
     this.loadDashboard(true);
-  }
-
-  private loadBookings() {
-    this.bookingService.getBookings().subscribe({
-      next: (bookingRes) => {
-        this.bookings = bookingRes.data;
-        this.isLoading = false;
-      },
-      error: () => {
-        this.bookings = [];
-        this.isLoading = false;
-      }
-    });
   }
 
   // Core Metrics
@@ -138,7 +152,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Recent Data
   get recentBookings() {
-    return this.bookings.slice(0, 5);
+    return [...this.bookings]
+      .sort((a, b) => new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime())
+      .slice(0, 5);
   }
 
   get roomStatusList() {
@@ -173,10 +189,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateStr = date.toDateString();
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
       const dayRevenue = this.bookings
-        .filter(booking => new Date(booking.checkInDate).toDateString() <= dateStr && 
-                           new Date(booking.checkOutDate).toDateString() >= dateStr)
+        .filter(booking => new Date(booking.checkInDate) <= dayEnd && new Date(booking.checkOutDate) >= dayStart)
         .reduce((sum, booking) => sum + booking.totalAmount, 0);
       last7Days.push(dayRevenue);
     }

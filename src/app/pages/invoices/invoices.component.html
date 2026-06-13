@@ -84,16 +84,16 @@
             </td>
             <td>{{ invoice.issueDate | date: 'short' }}</td>
             <td class="actions">
-              <button *ngIf="invoice.status === 'draft'" (click)="markAsIssued(invoice._id)" class="btn-sm btn-info" title="Issue Invoice">
+              <button *ngIf="canManageInvoices && invoice.status === 'draft'" (click)="markAsIssued(invoice._id)" class="btn-sm btn-info" [disabled]="isUpdating" title="Issue Invoice">
                 Issue
               </button>
-              <button *ngIf="invoice.status === 'issued' || invoice.status === 'unpaid'" (click)="markAsPaid(invoice._id)" class="btn-sm btn-success" title="Mark as Paid">
+              <button *ngIf="canManageInvoices && (invoice.status === 'issued' || invoice.status === 'unpaid')" (click)="markAsPaid(invoice._id)" class="btn-sm btn-success" [disabled]="isUpdating" title="Mark as Paid">
                 Mark Paid
               </button>
-              <button *ngIf="invoice.status === 'draft'" (click)="deleteInvoice(invoice._id)" class="btn-sm btn-danger" title="Delete Invoice">
+              <button *ngIf="canManageInvoices && invoice.status === 'draft'" (click)="deleteInvoice(invoice._id)" class="btn-sm btn-danger" [disabled]="isDeleting" title="Delete Invoice">
                 Delete
               </button>
-              <a [routerLink]="['/invoices', invoice._id]" class="btn-sm btn-view">View</a>
+              <button type="button" class="btn-sm btn-view" (click)="viewInvoice(invoice)">View</button>
             </td>
           </tr>
         </tbody>
@@ -109,4 +109,94 @@
       <button type="button" routerLink="/bookings" class="btn-primary">Create Invoice</button>
     </div>
   </section>
+
+  <div *ngIf="selectedInvoice" class="invoice-backdrop" role="presentation">
+    <section class="invoice-modal printable-invoice" role="dialog" aria-modal="true" aria-labelledby="invoice-preview-title">
+      <div class="invoice-toolbar no-print">
+        <h2 id="invoice-preview-title">Invoice Preview</h2>
+        <div class="modal-actions">
+          <button type="button" class="btn-sm btn-view" (click)="closeInvoicePreview()">Close</button>
+          <button type="button" class="btn-sm btn-info" (click)="printInvoice()">Print</button>
+        </div>
+      </div>
+
+      <div class="invoice-document">
+        <header class="invoice-header">
+          <div>
+            <h2>Grand Meridian</h2>
+            <p>Hotel Management</p>
+          </div>
+          <div class="invoice-number-block">
+            <span>Invoice</span>
+            <strong>{{ selectedInvoice.invoiceNumber }}</strong>
+          </div>
+        </header>
+
+        <section class="invoice-meta">
+          <div>
+            <span>Guest</span>
+            <strong>{{ selectedInvoice.guest.fullName }}</strong>
+            <p>{{ selectedInvoice.guest.phone }}</p>
+            <p>{{ selectedInvoice.guest.email || 'No email' }}</p>
+          </div>
+          <div>
+            <span>Room</span>
+            <strong>{{ selectedInvoice.room.roomNumber }} - {{ selectedInvoice.room.type }}</strong>
+            <p>{{ selectedInvoice.checkInDate | date: 'dd MMM yyyy' }} to {{ selectedInvoice.checkOutDate | date: 'dd MMM yyyy' }}</p>
+            <p>{{ selectedInvoice.numberOfNights }} {{ selectedInvoice.numberOfNights === 1 ? 'night' : 'nights' }}</p>
+          </div>
+        </section>
+
+        <table class="invoice-detail-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Qty</th>
+              <th>Rate</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Room charges</td>
+              <td>{{ selectedInvoice.numberOfNights }}</td>
+              <td>{{ selectedInvoice.room.pricePerNight | currency }}</td>
+              <td>{{ selectedInvoice.roomCharges | currency }}</td>
+            </tr>
+            <tr *ngFor="let charge of selectedInvoice.additionalCharges">
+              <td>{{ charge.description }}</td>
+              <td>1</td>
+              <td>{{ charge.amount | currency }}</td>
+              <td>{{ charge.amount | currency }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <section class="invoice-totals">
+          <div><span>Subtotal</span><strong>{{ selectedInvoice.subtotal | currency }}</strong></div>
+          <div><span>Discount</span><strong>{{ selectedInvoice.discount | currency }}</strong></div>
+          <div><span>Tax</span><strong>{{ selectedInvoice.taxAmount | currency }}</strong></div>
+          <div class="grand-total"><span>Total</span><strong>{{ selectedInvoice.totalAmount | currency }}</strong></div>
+        </section>
+
+        <footer class="invoice-footer">
+          <span>Status: {{ selectedInvoice.status | titlecase }}</span>
+          <span>Issued: {{ selectedInvoice.issueDate | date: 'dd MMM yyyy' }}</span>
+        </footer>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="invoicePendingDelete" class="invoice-backdrop" role="presentation" (click)="cancelDeleteInvoice()">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-invoice-title" (click)="$event.stopPropagation()">
+      <h2 id="delete-invoice-title">Delete Invoice</h2>
+      <p>Delete invoice <strong>{{ invoicePendingDelete.invoiceNumber }}</strong>? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-sm btn-view" [disabled]="isDeleting" (click)="cancelDeleteInvoice()">Cancel</button>
+        <button type="button" class="btn-sm btn-danger" [disabled]="isDeleting" (click)="confirmDeleteInvoice()">
+          {{ isDeleting ? 'Deleting...' : 'Delete Invoice' }}
+        </button>
+      </div>
+    </section>
+  </div>
 </main>

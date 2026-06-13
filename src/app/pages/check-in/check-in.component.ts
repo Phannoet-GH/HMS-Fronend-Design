@@ -1,8 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
+import { finalize, forkJoin, timeout } from 'rxjs';
 import { Booking, BookingPayload, BookingService } from '../../core/services/booking.service';
+import { Invoice, InvoiceService } from '../../core/services/invoice.service';
 import { Room, RoomService } from '../../core/services/room.service';
+import { AuthService } from '../../core/services/auth.service';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -17,6 +21,8 @@ export class CheckInComponent implements OnInit, OnDestroy {
   bookings: Booking[] = [];
   isLoading = false;
   isSaving = false;
+  isCreatingInvoice = false;
+  createdInvoice: Invoice | null = null;
   errorMessage = '';
   successMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
@@ -39,7 +45,11 @@ export class CheckInComponent implements OnInit, OnDestroy {
 
   constructor(
     private bookingService: BookingService,
-    private roomService: RoomService
+    private invoiceService: InvoiceService,
+    private roomService: RoomService,
+    private authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -57,16 +67,26 @@ export class CheckInComponent implements OnInit, OnDestroy {
     if (!silent) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.cdr.detectChanges();
     }
 
-    this.roomService.getRooms().subscribe({
-      next: (res) => {
-        this.rooms = res.data;
-        this.loadBookings();
+    forkJoin({
+      rooms: this.roomService.getRooms(),
+      bookings: this.bookingService.getBookings()
+    }).pipe(
+      timeout(10000),
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: ({ rooms, bookings }) => {
+        this.rooms = Array.isArray(rooms.data) ? rooms.data : [];
+        this.bookings = Array.isArray(bookings.data) ? bookings.data : [];
+        this.errorMessage = '';
       },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load rooms';
-        this.isLoading = false;
+        this.handleLoadError(err, silent);
       }
     });
   }
@@ -76,22 +96,35 @@ export class CheckInComponent implements OnInit, OnDestroy {
     this.loadData(true);
   }
 
-  loadBookings() {
-    this.bookingService.getBookings().subscribe({
-      next: (res) => {
-        this.bookings = res.data;
-        this.isLoading = false;
-      },
-      error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to load bookings';
-        this.isLoading = false;
-      }
-    });
+  private handleLoadError(err: any, silent = false) {
+    if (err.status === 401) {
+      this.authService.logout();
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: '/checkin' }
+      });
+      return;
+    }
+
+    if (!silent) {
+      this.errorMessage = err.name === 'TimeoutError'
+        ? 'Check-in data timed out. Check that the backend and MongoDB are running, then refresh.'
+        : err.error?.message || 'Unable to load check-in data';
+    }
   }
 
-  completeCheckIn() {
-    if (!this.form.guest.fullName || !this.form.guest.phone || !this.form.roomId || !this.form.checkOutDate) {
+  completeCheckIn(form: NgForm) {
+    if (form.invalid || this.isSaving) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
+    if (!this.form.guest.fullName.trim() || !this.form.guest.phone.trim() || !this.form.roomId || !this.form.checkOutDate) {
       this.errorMessage = 'Guest name, phone, room, and check-out date are required';
+      return;
+    }
+
+    if (this.totalNights <= 0) {
+      this.errorMessage = 'Check-out date must be after check-in date';
       return;
     }
 
@@ -100,25 +133,89 @@ export class CheckInComponent implements OnInit, OnDestroy {
     this.successMessage = '';
 
     const payload: BookingPayload = {
-      guest: this.form.guest,
+      guest: {
+        fullName: this.form.guest.fullName.trim(),
+        phone: this.form.guest.phone.trim(),
+        email: this.form.guest.email?.trim().toLowerCase() || '',
+        address: this.form.guest.address?.trim() || ''
+      },
       roomId: this.form.roomId,
       checkInDate: this.form.checkInDate,
       checkOutDate: this.form.checkOutDate,
       status: 'checked_in'
     };
 
-    this.bookingService.createBooking(payload).subscribe({
-      next: () => {
-        this.successMessage = 'Guest checked in successfully';
-        this.resetForm();
-        this.loadData();
-        this.isSaving = false;
-      },
+    const invoiceNights = this.totalNights;
+    const invoiceRoomCharges = this.totalAmount;
+
+    this.bookingService.createBooking(payload).pipe(
+      timeout(15000),
+      finalize(() => {
+        if (!this.isCreatingInvoice) {
+          this.isSaving = false;
+        }
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (res) => this.createInvoiceForCheckIn(res.data, invoiceNights, invoiceRoomCharges),
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Unable to complete check-in';
-        this.isSaving = false;
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login'], {
+            queryParams: { returnUrl: '/checkin' }
+          });
+          return;
+        }
+
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Check-in timed out. Check that the backend and MongoDB are running, then try again.'
+          : err.error?.message || 'Unable to complete check-in';
       }
     });
+  }
+
+  private createInvoiceForCheckIn(booking: Booking, numberOfNights: number, roomCharges: number) {
+    this.isCreatingInvoice = true;
+
+    this.invoiceService.createInvoice({
+      bookingId: booking._id,
+      numberOfNights,
+      roomCharges,
+      additionalCharges: [],
+      discount: 0,
+      taxPercentage: 0,
+      notes: this.form.notes?.trim() || 'Created automatically from check-in'
+    }).pipe(
+      timeout(15000),
+      finalize(() => {
+        this.isCreatingInvoice = false;
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (res) => {
+        this.createdInvoice = res.data;
+        this.successMessage = 'Guest checked in and invoice created successfully';
+        this.resetForm();
+        this.loadData();
+      },
+      error: (err) => {
+        this.successMessage = 'Guest checked in successfully';
+        this.errorMessage = err.name === 'TimeoutError'
+          ? 'Check-in succeeded, but invoice creation timed out. Create the invoice from Invoices Management.'
+          : err.error?.message || 'Check-in succeeded, but invoice creation failed';
+        this.resetForm();
+        this.loadData();
+      }
+    });
+  }
+
+  closeInvoicePreview() {
+    this.createdInvoice = null;
+  }
+
+  printInvoice() {
+    window.print();
   }
 
   resetForm() {
@@ -137,6 +234,11 @@ export class CheckInComponent implements OnInit, OnDestroy {
       notes: '',
       paymentStatus: 'pending'
     };
+  }
+
+  selectRoom(roomId: string) {
+    this.form.roomId = roomId;
+    this.errorMessage = '';
   }
 
   get availableRooms() {

@@ -10,6 +10,7 @@
   </header>
 
   <p *ngIf="errorMessage" class="alert error">{{ errorMessage }}</p>
+  <p *ngIf="successMessage" class="alert success">{{ successMessage }}</p>
 
   <section class="summary-grid">
     <article><span>Collected</span><strong>{{ totalCollected | currency }}</strong></article>
@@ -43,11 +44,11 @@
         <tbody>
           <tr *ngFor="let invoice of invoices">
             <td>{{ invoice.invoiceNumber }}</td>
-            <td>{{ invoice.guest.fullName }}</td>
+            <td>{{ guestName(invoice) }}</td>
             <td>{{ invoice.paymentMethod || 'Not recorded' }}</td>
             <td>{{ invoice.totalAmount | currency }}</td>
             <td>
-              <span class="badge" [class.success]="invoice.status === 'paid'" [class.pending]="invoice.status !== 'paid'">
+              <span class="badge" [ngClass]="statusClass(invoice)">
                 {{ invoice.status | titlecase }}
               </span>
             </td>
@@ -56,11 +57,13 @@
               <button
                 class="secondary"
                 type="button"
-                *ngIf="invoice.status !== 'paid'"
+                *ngIf="canMarkPaid(invoice)"
+                [disabled]="updatingInvoiceId === invoice._id"
                 (click)="markPaid(invoice)"
               >
-                Mark Paid
+                {{ updatingInvoiceId === invoice._id ? 'Saving...' : 'Mark Paid' }}
               </button>
+              <span *ngIf="!canMarkPaid(invoice)" class="muted">No action</span>
             </td>
           </tr>
         </tbody>

@@ -12,34 +12,36 @@
     <p class="muted">Loading reports...</p>
   </div>
 
+  <p *ngIf="errorMessage" class="alert error">{{ errorMessage }}</p>
+
   <!-- Reports Content -->
   <div *ngIf="!isLoading" class="reports-content">
     
     <!-- Key Metrics Section -->
     <section class="metrics-grid">
       <div class="metric-card">
-        <span class="metric-icon">📊</span>
+        <span class="metric-icon">BK</span>
         <div class="metric-info">
           <span class="label">Total Bookings</span>
           <span class="value">{{ totalBookings }}</span>
         </div>
       </div>
       <div class="metric-card">
-        <span class="metric-icon">📈</span>
+        <span class="metric-icon">RV</span>
         <div class="metric-info">
           <span class="label">Total Revenue</span>
           <span class="value">{{ totalRevenue | currency }}</span>
         </div>
       </div>
       <div class="metric-card">
-        <span class="metric-icon">🏨</span>
+        <span class="metric-icon">RM</span>
         <div class="metric-info">
           <span class="label">Room Utilization</span>
           <span class="value">{{ roomUtilizationRate }}%</span>
         </div>
       </div>
       <div class="metric-card">
-        <span class="metric-icon">⏱️</span>
+        <span class="metric-icon">ST</span>
         <div class="metric-info">
           <span class="label">Avg. Stay Duration</span>
           <span class="value">{{ averageStayDuration }} nights</span>
