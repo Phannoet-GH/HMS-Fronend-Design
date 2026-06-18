@@ -64,7 +64,8 @@
 
         <label>
           Check-Out
-          <input name="checkOutDate" type="date" [min]="form.checkInDate" [(ngModel)]="form.checkOutDate" required />
+          <input name="checkOutDate" type="date" [min]="minCheckOutDate" [(ngModel)]="form.checkOutDate" required />
+          <span class="field-hint">Must be at least one night after check-in.</span>
         </label>
 
         <label>
@@ -72,7 +73,7 @@
           <select name="status" [(ngModel)]="form.status">
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
-            <option value="checked_in">Checked In</option>
+            <option value="checked-in">Checked In</option>
           </select>
         </label>
 
@@ -84,11 +85,12 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn" [disabled]="isSaving || bookingForm.invalid || totalNights <= 0">
+        <button type="submit" class="btn" [disabled]="isSaving">
           {{ isSaving ? 'Saving...' : 'Create Booking' }}
         </button>
         <button type="button" class="secondary" (click)="toggleBookingForm()" [disabled]="isSaving">Cancel</button>
       </div>
+      <p *ngIf="!canCreateBooking" class="field-hint action-hint">{{ bookingDisabledReason }}</p>
     </form>
 
     <section *ngIf="!showBookingForm" class="panel">
@@ -127,14 +129,14 @@
                   type="button"
                   *ngIf="booking.status === 'confirmed' || booking.status === 'pending'"
                   [disabled]="updatingBookingId === booking._id"
-                  (click)="updateStatus(booking, 'checked_in')"
+                  (click)="updateStatus(booking, 'checked-in')"
                 >
                   {{ updatingBookingId === booking._id ? 'Saving...' : 'Check In' }}
                 </button>
                 <button
                   class="secondary"
                   type="button"
-                  *ngIf="booking.status === 'checked_in'"
+                  *ngIf="booking.status === 'checked-in' || booking.status === 'checked_in'"
                   (click)="openCheckout(booking)"
                 >
                   Check Out
@@ -142,7 +144,7 @@
                 <button
                   class="danger"
                   type="button"
-                  *ngIf="booking.status !== 'checked_out' && booking.status !== 'cancelled'"
+                  *ngIf="booking.status !== 'checked-out' && booking.status !== 'checked_out' && booking.status !== 'cancelled'"
                   [disabled]="updatingBookingId === booking._id"
                   (click)="updateStatus(booking, 'cancelled')"
                 >

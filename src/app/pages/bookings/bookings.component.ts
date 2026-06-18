@@ -109,8 +109,13 @@ export class BookingsComponent implements OnInit, OnDestroy {
   }
 
   createBooking(form: NgForm) {
-    if (form.invalid || this.isSaving) {
+    if (this.isSaving) {
+      return;
+    }
+
+    if (form.invalid) {
       form.control.markAllAsTouched();
+      this.errorMessage = this.bookingDisabledReason || 'Complete the required booking fields';
       return;
     }
 
@@ -200,11 +205,39 @@ export class BookingsComponent implements OnInit, OnDestroy {
   }
 
   get activeBookings() {
-    return this.bookings.filter((booking) => !['checked_out', 'cancelled'].includes(booking.status)).length;
+    return this.bookings.filter((booking) => !['checked-out', 'checked_out', 'cancelled'].includes(booking.status)).length;
   }
 
   get selectedRoom() {
     return this.rooms.find((room) => room._id === this.form.roomId) || null;
+  }
+
+  get minCheckOutDate() {
+    if (!this.form.checkInDate) return today;
+
+    const checkInDate = new Date(this.form.checkInDate);
+    checkInDate.setDate(checkInDate.getDate() + 1);
+
+    return checkInDate.toISOString().slice(0, 10);
+  }
+
+  get canCreateBooking() {
+    return !!this.form.guest.fullName.trim()
+      && !!this.form.guest.phone.trim()
+      && !!this.form.roomId
+      && !!this.form.checkInDate
+      && !!this.form.checkOutDate
+      && this.totalNights > 0;
+  }
+
+  get bookingDisabledReason() {
+    if (this.isSaving) return 'Saving booking...';
+    if (!this.form.guest.fullName.trim()) return 'Enter the guest full name';
+    if (!this.form.guest.phone.trim()) return 'Enter the guest phone number';
+    if (!this.form.roomId) return 'Select an available room';
+    if (!this.form.checkOutDate) return 'Select a check-out date';
+    if (this.totalNights <= 0) return 'Check-out date must be after check-in date';
+    return '';
   }
 
   get totalNights() {
@@ -225,8 +258,8 @@ export class BookingsComponent implements OnInit, OnDestroy {
     return {
       pending: status === 'pending',
       confirmed: status === 'confirmed',
-      active: status === 'checked_in',
-      success: status === 'checked_out',
+      active: ['checked-in', 'checked_in'].includes(status),
+      success: ['checked-out', 'checked_out'].includes(status),
       danger: status === 'cancelled'
     };
   }

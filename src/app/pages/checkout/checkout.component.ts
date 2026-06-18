@@ -19,7 +19,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   selectedBookingId = '';
   searchTerm = '';
   roomCondition = 'Ready for cleaning';
-  paymentMethod = 'Credit Card';
+  paymentMethod = 'card';
   serviceCharge = 0;
   taxPercentage = 0;
   notes = '';
@@ -60,7 +60,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
 
     forkJoin({
-      bookings: this.bookingService.getBookings({ status: 'checked_in' }),
+      bookings: this.bookingService.getBookings({ status: 'checked-in' }),
       invoices: this.invoiceService.getInvoices({ limit: 100 })
     }).pipe(
       timeout(10000),
@@ -160,7 +160,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       )),
       switchMap((paidInvoiceRes) => {
         this.checkoutInvoice = paidInvoiceRes.data;
-        return this.bookingService.updateBookingStatus(booking._id, 'checked_out');
+        return this.bookingService.updateBookingStatus(booking._id, 'checked-out');
       }),
       finalize(() => {
         this.isSaving = false;
@@ -192,7 +192,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.selectedBookingId = '';
     this.searchTerm = '';
     this.roomCondition = 'Ready for cleaning';
-    this.paymentMethod = 'Credit Card';
+    this.paymentMethod = 'card';
     this.serviceCharge = 0;
     this.taxPercentage = 0;
     this.notes = '';

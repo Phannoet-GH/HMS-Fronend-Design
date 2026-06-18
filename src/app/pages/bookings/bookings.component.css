@@ -134,6 +134,15 @@ label {
   font-weight: 600;
 }
 
+.field-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.action-hint {
+  margin: -6px 0 0;
+}
+
 .booking-preview {
   display: grid;
   gap: 4px;

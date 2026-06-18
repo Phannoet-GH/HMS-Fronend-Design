@@ -71,6 +71,7 @@
                 </span>
                 <span class="room-option-meta">{{ room.capacity }} {{ room.capacity === 1 ? 'guest' : 'guests' }}</span>
                 <span class="room-option-price">{{ room.pricePerNight | currency }} / night</span>
+                <span class="room-selected-indicator" *ngIf="form.roomId === room._id">Selected</span>
               </button>
             </div>
             <span *ngIf="!isLoading && availableRooms.length === 0" class="field-hint">No available rooms right now.</span>
@@ -83,20 +84,42 @@
 
           <label>
             Check-Out Date
-            <input name="checkOutDate" type="date" [min]="form.checkInDate" [(ngModel)]="form.checkOutDate" required />
+            <input name="checkOutDate" type="date" [min]="minCheckOutDate" [(ngModel)]="form.checkOutDate" required />
+            <span class="field-hint">Must be at least one night after check-in.</span>
           </label>
 
           <label>
             Guests
-            <input name="guests" type="number" min="1" placeholder="Total guests" [(ngModel)]="form.guests" />
+            <span class="stepper-control">
+              <button type="button" class="icon-button" (click)="adjustGuests(-1)" [disabled]="form.guests <= 1">-</button>
+              <input name="guests" type="number" min="1" placeholder="Total guests" [(ngModel)]="form.guests" />
+              <button type="button" class="icon-button" (click)="adjustGuests(1)">+</button>
+            </span>
           </label>
 
           <label>
             Payment Status
-            <select name="paymentStatus" [(ngModel)]="form.paymentStatus">
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-            </select>
+            <input type="hidden" name="paymentStatus" [(ngModel)]="form.paymentStatus" />
+            <span class="segmented-control" role="radiogroup" aria-label="Payment status">
+              <button
+                type="button"
+                [class.selected]="form.paymentStatus === 'pending'"
+                [attr.aria-checked]="form.paymentStatus === 'pending'"
+                role="radio"
+                (click)="setPaymentStatus('pending')"
+              >
+                Pending
+              </button>
+              <button
+                type="button"
+                [class.selected]="form.paymentStatus === 'paid'"
+                [attr.aria-checked]="form.paymentStatus === 'paid'"
+                role="radio"
+                (click)="setPaymentStatus('paid')"
+              >
+                Paid
+              </button>
+            </span>
           </label>
         </div>
 
@@ -109,12 +132,13 @@
         <p *ngIf="successMessage" class="message success-text">{{ successMessage }}</p>
 
         <div class="form-actions">
-          <button type="submit" class="btn" [disabled]="isSaving || checkInForm.invalid || !form.roomId || totalNights <= 0">
+          <button type="submit" class="btn" [disabled]="isSaving">
             {{ isCreatingInvoice ? 'Creating Invoice...' : isSaving ? 'Checking In...' : 'Complete Check-In' }}
           </button>
 
           <button type="button" class="secondary" (click)="resetForm()">Clear</button>
         </div>
+        <p *ngIf="!canCompleteCheckIn" class="field-hint action-hint">{{ checkInDisabledReason }}</p>
       </form>
     </article>
 
@@ -172,7 +196,10 @@
 
         <tbody>
           <tr *ngFor="let booking of recentCheckIns">
-            <td>{{ booking.guest.fullName }}</td>
+            <td>
+              <strong class="guest-name">{{ booking.guest.fullName }}</strong>
+              <small>{{ booking.guest.phone || 'No phone' }}</small>
+            </td>
             <td>{{ booking.room?.roomNumber || 'Room unavailable' }}</td>
             <td>{{ booking.checkInDate | date: 'dd MMM yyyy' }}</td>
             <td>{{ booking.checkOutDate | date: 'dd MMM yyyy' }}</td>

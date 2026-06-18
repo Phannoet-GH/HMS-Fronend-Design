@@ -1,1 +1,184 @@
-<app-resource-manager [config]="config"></app-resource-manager>
+<main class="room-service-page">
+  <header class="page-header">
+    <div>
+      <h1>Room Services</h1>
+      <p>Manage in-room dining and amenity delivery orders.</p>
+    </div>
+
+    <button class="secondary" type="button" (click)="loadData()" [disabled]="isLoading">
+      {{ isLoading ? 'Loading...' : 'Refresh' }}
+    </button>
+  </header>
+
+  <p *ngIf="errorMessage" class="alert error">{{ errorMessage }}</p>
+  <p *ngIf="successMessage" class="alert success">{{ successMessage }}</p>
+
+  <section class="summary-grid">
+    <article><span>Orders</span><strong>{{ orders.length }}</strong></article>
+    <article><span>Requested</span><strong>{{ requestedCount }}</strong></article>
+    <article><span>Preparing</span><strong>{{ preparingCount }}</strong></article>
+    <article><span>Revenue</span><strong>{{ revenueTotal | currency }}</strong></article>
+  </section>
+
+  <section class="service-grid">
+    <form #orderForm="ngForm" class="panel order-form" (ngSubmit)="createOrder(orderForm)">
+      <div class="section-header">
+        <h2>New Order</h2>
+        <span class="badge active">{{ totalAmount | currency }}</span>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Room
+          <select name="roomId" [ngModel]="selectedRoomId" (ngModelChange)="selectRoom($event)" required>
+            <option value="">Select occupied room</option>
+            <option *ngFor="let room of serviceRooms" [value]="room._id">
+              {{ room.roomNumber }} - {{ room.type | titlecase }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Guest Name
+          <input name="guestName" [(ngModel)]="guestName" placeholder="Guest name" />
+        </label>
+
+        <label>
+          Status
+          <select name="status" [(ngModel)]="status">
+            <option value="requested">Requested</option>
+            <option value="preparing">Preparing</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+
+        <label>
+          Notes
+          <input name="notes" [(ngModel)]="notes" placeholder="Delivery notes" />
+        </label>
+      </div>
+
+      <section class="line-items" aria-label="Order items">
+        <div class="line-header">
+          <h3>Items</h3>
+          <button type="button" class="secondary" (click)="addLine()">Add Item</button>
+        </div>
+
+        <p *ngIf="!isLoading && availableInventory.length === 0" class="field-hint inventory-hint">
+          No stocked inventory items are available for room service.
+        </p>
+
+        <div class="line-row" *ngFor="let line of lines; let i = index">
+          <label>
+            Item
+            <select
+              [name]="'item' + i"
+              [ngModel]="line.inventoryItemId"
+              (ngModelChange)="selectItem(i, $event)"
+              required
+            >
+              <option value="">Select item</option>
+              <option *ngFor="let item of availableInventory" [value]="item._id">
+                {{ item.name }} - {{ item.unitCost | currency }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            Qty
+            <input [name]="'quantity' + i" type="number" min="1" [(ngModel)]="line.quantity" />
+          </label>
+
+          <label>
+            Price
+            <input [name]="'price' + i" type="number" min="0" [(ngModel)]="line.price" />
+          </label>
+
+          <strong>{{ (line.quantity * line.price) | currency }}</strong>
+          <button type="button" class="danger icon-action" (click)="removeLine(i)">Remove</button>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button type="submit" class="btn" [disabled]="isSaving">
+          {{ isSaving ? 'Saving...' : 'Create Order' }}
+        </button>
+        <button type="button" class="secondary" (click)="resetForm()" [disabled]="isSaving">Clear</button>
+      </div>
+      <p *ngIf="!canCreateOrder" class="field-hint">{{ orderDisabledReason }}</p>
+    </form>
+
+    <section class="panel">
+      <div class="section-header">
+        <h2>Order Queue</h2>
+        <span class="badge active">{{ queueOrders.length }} records</span>
+      </div>
+
+      <p *ngIf="isLoading" class="muted">Loading orders...</p>
+      <p *ngIf="!isLoading && orders.length === 0" class="muted">No room service orders found.</p>
+
+      <div class="order-list" *ngIf="!isLoading && queueOrders.length > 0">
+        <article class="order-card" *ngFor="let order of queueOrders" [class.legacy-card]="isLegacyOrder(order)">
+          <header class="order-card-header">
+            <div>
+              <span>Room</span>
+              <strong>{{ order.roomNumber || 'Room unavailable' }}</strong>
+              <small>{{ order.guestName || 'Guest unavailable' }}</small>
+            </div>
+            <span class="badge" [ngClass]="displayStatus(order)">{{ displayStatus(order) | titlecase }}</span>
+          </header>
+
+          <div class="order-card-body">
+            <div class="order-detail items-detail">
+              <span>Items</span>
+              <strong>{{ itemSummary(order) }}</strong>
+              <small *ngIf="isLegacyOrder(order)">Legacy/manual record</small>
+            </div>
+
+            <div class="order-detail">
+              <span>Total</span>
+              <strong>{{ orderTotal(order) | currency }}</strong>
+            </div>
+
+            <div class="order-detail">
+              <span>Created</span>
+              <strong>{{ order.createdAt | date: 'dd MMM yyyy' }}</strong>
+            </div>
+          </div>
+
+          <footer class="order-card-actions">
+            <button
+              *ngIf="canPrepare(order)"
+              type="button"
+              class="secondary"
+              [disabled]="updatingOrderId === order._id"
+              (click)="updateStatus(order, 'preparing')"
+            >
+              Prepare
+            </button>
+            <button
+              *ngIf="canDeliver(order)"
+              type="button"
+              class="secondary"
+              [disabled]="updatingOrderId === order._id"
+              (click)="updateStatus(order, 'delivered')"
+            >
+              Deliver
+            </button>
+            <button
+              *ngIf="canCancel(order)"
+              type="button"
+              class="danger"
+              [disabled]="updatingOrderId === order._id"
+              (click)="updateStatus(order, 'cancelled')"
+            >
+              Cancel
+            </button>
+            <span *ngIf="!canCancel(order) && !canDeliver(order)" class="muted action-state">Closed</span>
+          </footer>
+        </article>
+      </div>
+    </section>
+  </section>
+</main>

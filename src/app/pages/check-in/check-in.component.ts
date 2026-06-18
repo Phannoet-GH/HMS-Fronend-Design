@@ -37,7 +37,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
     roomId: '',
     checkInDate: today,
     checkOutDate: '',
-    status: 'checked_in',
+    status: 'checked-in',
     guests: 1,
     notes: '',
     paymentStatus: 'pending'
@@ -113,8 +113,13 @@ export class CheckInComponent implements OnInit, OnDestroy {
   }
 
   completeCheckIn(form: NgForm) {
-    if (form.invalid || this.isSaving) {
+    if (this.isSaving) {
+      return;
+    }
+
+    if (form.invalid) {
       form.control.markAllAsTouched();
+      this.errorMessage = this.checkInDisabledReason || 'Complete the required check-in fields';
       return;
     }
 
@@ -142,7 +147,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
       roomId: this.form.roomId,
       checkInDate: this.form.checkInDate,
       checkOutDate: this.form.checkOutDate,
-      status: 'checked_in'
+      status: 'checked-in'
     };
 
     const invoiceNights = this.totalNights;
@@ -198,6 +203,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
         this.successMessage = 'Guest checked in and invoice created successfully';
         this.resetForm();
         this.loadData();
+        this.printCreatedInvoice();
       },
       error: (err) => {
         this.successMessage = 'Guest checked in successfully';
@@ -218,6 +224,10 @@ export class CheckInComponent implements OnInit, OnDestroy {
     window.print();
   }
 
+  private printCreatedInvoice() {
+    setTimeout(() => window.print(), 250);
+  }
+
   resetForm() {
     this.form = {
       guest: {
@@ -229,7 +239,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
       roomId: '',
       checkInDate: today,
       checkOutDate: '',
-      status: 'checked_in',
+      status: 'checked-in',
       guests: 1,
       notes: '',
       paymentStatus: 'pending'
@@ -241,12 +251,48 @@ export class CheckInComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
   }
 
+  setPaymentStatus(status: string) {
+    this.form.paymentStatus = status;
+  }
+
+  adjustGuests(change: number) {
+    this.form.guests = Math.max(1, (Number(this.form.guests) || 1) + change);
+  }
+
   get availableRooms() {
     return this.rooms.filter((room) => room.status === 'available');
   }
 
   get selectedRoom() {
     return this.rooms.find((room) => room._id === this.form.roomId) || null;
+  }
+
+  get minCheckOutDate() {
+    if (!this.form.checkInDate) return today;
+
+    const checkInDate = new Date(this.form.checkInDate);
+    checkInDate.setDate(checkInDate.getDate() + 1);
+
+    return checkInDate.toISOString().slice(0, 10);
+  }
+
+  get canCompleteCheckIn() {
+    return !!this.form.guest.fullName.trim()
+      && !!this.form.guest.phone.trim()
+      && !!this.form.roomId
+      && !!this.form.checkInDate
+      && !!this.form.checkOutDate
+      && this.totalNights > 0;
+  }
+
+  get checkInDisabledReason() {
+    if (this.isSaving) return 'Saving check-in...';
+    if (!this.form.guest.fullName.trim()) return 'Enter the guest full name';
+    if (!this.form.guest.phone.trim()) return 'Enter the guest phone number';
+    if (!this.form.roomId) return 'Select an available room';
+    if (!this.form.checkOutDate) return 'Select a check-out date';
+    if (this.totalNights <= 0) return 'Check-out date must be after check-in date';
+    return '';
   }
 
   get totalNights() {
@@ -264,6 +310,6 @@ export class CheckInComponent implements OnInit, OnDestroy {
   }
 
   get recentCheckIns() {
-    return this.bookings.filter((booking) => booking.status === 'checked_in').slice(0, 5);
+    return this.bookings.filter((booking) => ['checked-in', 'checked_in'].includes(booking.status)).slice(0, 5);
   }
 }

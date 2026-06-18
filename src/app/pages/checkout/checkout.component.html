@@ -89,9 +89,10 @@
           <label>
             Payment Method
             <select name="paymentMethod" [(ngModel)]="paymentMethod">
-              <option>Credit Card</option>
-              <option>Cash</option>
-              <option>Bank Transfer</option>
+              <option value="card">Credit Card</option>
+              <option value="cash">Cash</option>
+              <option value="bank-transfer">Bank Transfer</option>
+              <option value="qr-code">QR Code</option>
             </select>
           </label>
 

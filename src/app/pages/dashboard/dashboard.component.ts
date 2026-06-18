@@ -118,7 +118,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get activeBookings() {
-    return this.bookings.filter((booking) => !['checked_out', 'cancelled'].includes(booking.status)).length;
+    return this.bookings.filter((booking) => !['checked-out', 'cancelled'].includes(booking.status)).length;
   }
 
   get todayCheckIns() {
@@ -175,8 +175,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   getBookingStatusBadgeClass(status: string): string {
     const statusMap: { [key: string]: string } = {
       'confirmed': 'badge-success',
-      'checked_in': 'badge-warning',
-      'checked_out': 'badge-success',
+      'checked-in': 'badge-warning',
+      'checked-out': 'badge-success',
       'cancelled': 'badge-danger',
       'pending': 'badge-info'
     };

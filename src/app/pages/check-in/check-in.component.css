@@ -129,6 +129,7 @@ label {
 }
 
 .room-option {
+  position: relative;
   display: grid;
   gap: 8px;
   min-height: 104px;
@@ -151,6 +152,20 @@ label {
   border-color: var(--accent);
   background: var(--accent-dim);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+.room-selected-indicator {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-transform: uppercase;
 }
 
 .room-option-top {
@@ -182,6 +197,76 @@ label {
 .field-hint {
   color: var(--muted);
   font-size: 12px;
+}
+
+.action-hint {
+  margin: -6px 0 0;
+}
+
+.stepper-control,
+.segmented-control {
+  display: grid;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.stepper-control {
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+}
+
+.stepper-control input {
+  height: 40px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.icon-button {
+  width: 42px;
+  height: 40px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.segmented-control {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  gap: 3px;
+}
+
+.segmented-control button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.segmented-control button.selected {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.22);
 }
 
 textarea {
@@ -273,6 +358,22 @@ td {
   border-bottom: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
+}
+
+td small,
+.guest-name {
+  display: block;
+}
+
+td small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.guest-name {
+  color: var(--text);
+  font-weight: 700;
 }
 
 tbody tr:hover {

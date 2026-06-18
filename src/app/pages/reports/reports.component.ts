@@ -208,8 +208,8 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
   private initializeBookingStatusChart() {
     const confirmed = this.bookings.filter(b => b.status === 'confirmed').length;
-    const checkedIn = this.bookings.filter(b => b.status === 'checked_in').length;
-    const checkedOut = this.bookings.filter(b => b.status === 'checked_out').length;
+    const checkedIn = this.bookings.filter(b => b.status === 'checked-in').length;
+    const checkedOut = this.bookings.filter(b => b.status === 'checked-out').length;
     const cancelled = this.bookings.filter(b => b.status === 'cancelled').length;
 
     this.bookingStatusChart = {

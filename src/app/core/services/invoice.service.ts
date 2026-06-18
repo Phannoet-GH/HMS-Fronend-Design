@@ -100,11 +100,11 @@ export class InvoiceService {
     const data: any = { status };
     if (paymentDate) data.paymentDate = paymentDate;
     if (paymentMethod) data.paymentMethod = paymentMethod;
-    return this.http.patch<ApiResponse<Invoice>>(`${this.baseUrl}/${id}/status`, data);
+    return this.http.put<ApiResponse<Invoice>>(`${this.baseUrl}/${id}/status`, data);
   }
 
   updateInvoice(id: string, data: Partial<InvoicePayload>) {
-    return this.http.put<ApiResponse<Invoice>>(`${this.baseUrl}/${id}`, data);
+    return this.http.patch<ApiResponse<Invoice>>(`${this.baseUrl}/${id}`, data);
   }
 
   deleteInvoice(id: string) {
