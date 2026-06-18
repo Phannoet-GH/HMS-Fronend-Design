@@ -1,44 +1,49 @@
 .stat-card {
-  min-height: 118px;
-  padding: 18px;
-  border: 1px solid var(--border);
+  padding: 20px;
   border-radius: 12px;
   background: var(--card);
-  transition: border-color 0.15s;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.stat-card:hover {
-  border-color: var(--border-hover);
+/* Tone Mappings */
+.tone-accent {
+  border-left: 4px solid var(--accent);
 }
 
-.stat-card span {
-  display: block;
+.tone-gold {
+  border-left: 4px solid var(--gold);
+}
+
+.tone-green {
+  border-left: 4px solid var(--green);
+}
+
+.tone-red {
+  border-left: 4px solid var(--red);
+}
+
+.tone-purple {
+  border-left: 4px solid var(--purple);
+}
+
+.stat-label {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.stat-card strong {
-  display: block;
-  margin-top: 10px;
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
   color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 28px;
-  font-weight: 500;
 }
 
-.stat-card small {
-  display: block;
-  margin-top: 8px;
+.stat-hint {
   color: var(--muted);
+  font-size: 12px;
 }
-
-.accent { border-left: 3px solid var(--accent); }
-.gold { border-left: 3px solid var(--gold); }
-.green { border-left: 3px solid var(--green); }
-.red { border-left: 3px solid var(--red); }
-.purple { border-left: 3px solid var(--purple); }
-.teal { border-left: 3px solid var(--teal); }
-.amber { border-left: 3px solid var(--amber); }

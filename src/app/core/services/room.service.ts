@@ -1,81 +1,69 @@
-import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, map, throwError } from 'rxjs';
-import { API_BASE_URL } from '@core/api.config';
-import { Room, RoomStatus, RoomQueryParams } from '@core/models/room.model';
-import { ApiResponse } from '@core/models/api-response.model';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
+import { API_BASE_URL } from '../api.config';
+import { Room } from '../models/room.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class RoomService {
-  private readonly endpoint = `${API_BASE_URL}/rooms`;
+  private readonly apiUrl = `${API_BASE_URL}/rooms`;
 
   constructor(private http: HttpClient) { }
 
-  getAll(filters: RoomQueryParams = {}): Observable<Room[]> {
+  /** * Internal helper to unwrap backend response objects 
+   */
+  private unwrap<T>(res: any): T {
+    return (res.data || res.rooms || res) as T;
+  }
+
+  /** 🛏️ Fetch rooms with optional status/type query filtering */
+  getRooms(filters?: Partial<Pick<Room, 'status' | 'type' | 'floorNumber'>>): Observable<Room[]> {
     let params = new HttpParams();
-    if (filters.status) params = params.set('status', filters.status);
-    if (filters.type) params = params.set('type', filters.type);
-    if (filters.capacity) params = params.set('capacity', String(filters.capacity));
-    if (filters.minPrice) params = params.set('minPrice', String(filters.minPrice));
-    if (filters.maxPrice) params = params.set('maxPrice', String(filters.maxPrice));
-
-    return this.http.get<ApiResponse<Room[]>>(this.endpoint, { params }).pipe(
-      map(res => res.data),
-      catchError(err => {
-        console.error('[RoomService] getAll failed', err);
-        return throwError(() => err);
-      })
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params = params.set(key, String(value));
+        }
+      });
+    }
+    return this.http.get<any>(this.apiUrl, { params }).pipe(
+      map(res => this.unwrap<Room[]>(res) || []) // 🟢 Fallback to [] if unwrap returns null/undefined
     );
   }
 
-  getById(id: string): Observable<Room> {
-    return this.http.get<ApiResponse<Room>>(`${this.endpoint}/${id}`).pipe(
-      map(res => res.data),
-      catchError(err => {
-        console.error(`[RoomService] getById(${id}) failed`, err);
-        return throwError(() => err);
-      })
+  /** 🔍 Fetch an individual room configuration profile */
+  getRoomById(id: string): Observable<Room> {
+    return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(
+      map(res => this.unwrap<Room>(res))
     );
   }
 
-  create(payload: Omit<Room, '_id' | 'createdAt' | 'updatedAt'>): Observable<Room> {
-    return this.http.post<ApiResponse<Room>>(this.endpoint, payload).pipe(
-      map(res => res.data),
-      catchError(err => {
-        console.error('[RoomService] create failed', err);
-        return throwError(() => err);
-      })
+  /** ➕ Create/Register a new room unit into inventory */
+  createRoom(roomData: Room): Observable<Room> {
+    return this.http.post<any>(this.apiUrl, roomData).pipe(
+      map(res => this.unwrap<Room>(res))
     );
   }
 
-  update(id: string, payload: Partial<Omit<Room, '_id' | 'createdAt' | 'updatedAt'>>): Observable<Room> {
-    return this.http.put<ApiResponse<Room>>(`${this.endpoint}/${id}`, payload).pipe(
-      map(res => res.data),
-      catchError(err => {
-        console.error(`[RoomService] update(${id}) failed`, err);
-        return throwError(() => err);
-      })
+  /** 🛠️ Fast property patcher for status toggles */
+  updateRoomStatus(id: string, status: Room['status']): Observable<Room> {
+    return this.http.patch<any>(`${this.apiUrl}/${id}/status`, { status }).pipe(
+      map(res => this.unwrap<Room>(res))
     );
   }
 
-  updateStatus(id: string, status: RoomStatus): Observable<Room> {
-    return this.http.patch<ApiResponse<Room>>(`${this.endpoint}/${id}/status`, { status }).pipe(
-      map(res => res.data),
-      catchError(err => {
-        console.error(`[RoomService] updateStatus(${id}) failed`, err);
-        return throwError(() => err);
-      })
+  /** ✏️ Modify comprehensive room parameters */
+  updateRoom(id: string, roomData: Partial<Room>): Observable<Room> {
+    return this.http.put<any>(`${this.apiUrl}/${id}`, roomData).pipe(
+      map(res => this.unwrap<Room>(res))
     );
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<null>>(`${this.endpoint}/${id}`).pipe(
-      map(() => void 0),
-      catchError(err => {
-        console.error(`[RoomService] delete(${id}) failed`, err);
-        return throwError(() => err);
-      })
-    );
+  /** ❌ Remove a room registry entry */
+  deleteRoom(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 }
-

@@ -43,7 +43,8 @@ p {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* 🟢 CHANGED: Increased from 4 to 5 to beautifully place the new cleaning metrics card */
   gap: 14px;
   margin-bottom: 20px;
 }
@@ -73,9 +74,23 @@ p {
   font-weight: 500;
 }
 
-.available-card { border-left: 3px solid var(--green); }
-.occupied-card { border-left: 3px solid var(--purple); }
-.maintenance-card { border-left: 3px solid var(--red); }
+/* 🟢 Left Border Accent Rules for Overview Cards */
+.available-card {
+  border-left: 3px solid var(--green);
+}
+
+.occupied-card {
+  border-left: 3px solid var(--purple);
+}
+
+.cleaning-card {
+  border-left: 3px solid #d97706;
+}
+
+/* 🧹 Added: Housekeeping amber border accent */
+.maintenance-card {
+  border-left: 3px solid var(--red);
+}
 
 .content-grid {
   display: grid;
@@ -101,6 +116,13 @@ p {
   gap: 14px;
 }
 
+/* 🟢 1-line Grid Splitter for multi-item form layouts (Room Number + Floor Placement) */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
 .room-form h2,
 .room-list h2 {
   margin-bottom: 4px;
@@ -119,7 +141,8 @@ textarea {
   resize: vertical;
 }
 
-.error {
+.error,
+.field-error {
   margin: 0;
   color: var(--red);
   font-size: 13px;
@@ -166,6 +189,7 @@ th {
   text-transform: uppercase;
 }
 
+/* 🟢 Row Status Badge Styles mapped to Room Management Lifecycles */
 .available {
   border: 1px solid #22c55e40;
   background: var(--green-dim);
@@ -177,6 +201,14 @@ th {
   border: 1px solid #a78bfa40;
   background: var(--purple-dim);
   color: var(--purple);
+}
+
+/* 🧹 Housekeeping lifecycle tracking colors */
+.dirty,
+.cleaning {
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  background: rgba(217, 119, 6, 0.1);
+  color: #d97706;
 }
 
 .maintenance {
@@ -242,6 +274,15 @@ th {
   gap: 10px;
 }
 
+/* 📱 Media Query Breakpoints */
+@media (max-width: 1100px) {
+
+  /* Scales metric layout down if viewing panels on laptop displays */
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -252,6 +293,12 @@ th {
     grid-template-columns: 1fr;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    /* Form row inputs stack cleanly on mobile dashboards */
+    gap: 14px;
   }
 }
 

@@ -68,7 +68,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
     forkJoin({
       bookings: this.bookingService.getBookings(),
-      rooms: this.roomService.getAll(),
+      rooms: this.roomService.getRooms(),
       invoices: this.invoiceService.getAllInvoices()   // ← was getAll()
     }).pipe(
       timeout(10000),

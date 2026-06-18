@@ -9,7 +9,8 @@
         {{ showGuestForm ? 'Close Form' : 'Add Guest' }}
       </button>
       <div class="search-row">
-        <input name="search" placeholder="Search guests" [(ngModel)]="search" (keyup.enter)="loadGuests()" />
+        <input name="search" placeholder="Search guests" [(ngModel)]="search" (keyup.enter)="loadGuests()"
+          class="form-control" />
         <button type="button" class="secondary" (click)="loadGuests()">Search</button>
       </div>
     </div>
@@ -18,32 +19,54 @@
   <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
   <section class="content-grid full-width">
-    <form *ngIf="showGuestForm" #guestForm="ngForm" class="guest-form" (ngSubmit)="saveGuest(guestForm)">
+    <form *ngIf="showGuestForm" #guestForm="ngForm" class="guest-form panel" (ngSubmit)="saveGuest(guestForm)">
       <h2>{{ selectedGuestId ? 'Edit Guest' : 'New Guest' }}</h2>
 
-      <label>
-        Full Name
-        <input name="fullName" [(ngModel)]="form.fullName" required />
-      </label>
+      <div class="form-grid">
+        <label>
+          Full Name <span class="text-danger">*</span>
+          <input name="fullName" [(ngModel)]="form.fullName" required class="form-control" />
+        </label>
 
-      <label>
-        Phone
-        <input name="phone" [(ngModel)]="form.phone" required />
-      </label>
+        <label>
+          Phone <span class="text-danger">*</span>
+          <input name="phone" [(ngModel)]="form.phone" required class="form-control" />
+        </label>
 
-      <label>
-        Email
-        <input type="email" name="email" [(ngModel)]="form.email" />
-      </label>
+        <label>
+          Email
+          <input type="email" name="email" [(ngModel)]="form.email" class="form-control" />
+        </label>
 
-      <label>
-        ID Number
-        <input name="idNumber" [(ngModel)]="form.idNumber" />
-      </label>
+        <label>
+          Nationality
+          <input name="nationality" [(ngModel)]="form.nationality" class="form-control" />
+        </label>
 
-      <label>
+        <label>
+          ID Type
+          <select name="idType" [(ngModel)]="form.idType" class="form-control">
+            <option value="national-id">National ID</option>
+            <option value="passport">Passport</option>
+            <option value="driver-license">Driver License</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+
+        <label>
+          ID Number
+          <input name="idNumber" [(ngModel)]="form.idNumber" class="form-control" />
+        </label>
+      </div>
+
+      <label class="full-width-label">
         Address
-        <textarea name="address" rows="3" [(ngModel)]="form.address"></textarea>
+        <textarea name="address" rows="2" [(ngModel)]="form.address" class="form-control"></textarea>
+      </label>
+
+      <label class="full-width-label">
+        Notes (Preferences, Allergies, etc.)
+        <textarea name="notes" rows="2" [(ngModel)]="form.notes" class="form-control"></textarea>
       </label>
 
       <div class="actions">
@@ -54,7 +77,7 @@
       </div>
     </form>
 
-    <section *ngIf="!showGuestForm" class="guest-list">
+    <section *ngIf="!showGuestForm" class="guest-list panel">
       <div class="list-header">
         <h2>Guest Directory</h2>
         <span class="badge">{{ guests.length }} records</span>
@@ -64,10 +87,16 @@
       <p *ngIf="!isLoading && guests.length === 0" class="muted">No guests found.</p>
 
       <div class="guest-card" *ngFor="let guest of guests">
-        <div>
+        <div class="guest-info">
           <h3>{{ guest.fullName }}</h3>
-          <p>{{ guest.phone }} <span *ngIf="guest.email">- {{ guest.email }}</span></p>
-          <small *ngIf="guest.idNumber" class="mono">ID {{ guest.idNumber }}</small>
+          <p>
+            {{ guest.phone }}
+            <span *ngIf="guest.email">• {{ guest.email }}</span>
+          </p>
+          <div class="tags">
+            <small *ngIf="guest.nationality" class="badge secondary-badge">{{ guest.nationality }}</small>
+            <small *ngIf="guest.idNumber" class="mono">ID: {{ guest.idNumber }}</small>
+          </div>
         </div>
         <div class="row-actions">
           <button type="button" class="secondary" (click)="editGuest(guest)">Edit</button>

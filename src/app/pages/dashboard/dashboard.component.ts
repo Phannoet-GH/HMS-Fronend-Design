@@ -49,7 +49,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     forkJoin({
-      rooms: this.roomService.getAll(),
+      rooms: this.roomService.getRooms(),
       bookings: this.bookingService.getBookings()
     }).pipe(
       timeout(10000),
@@ -138,12 +138,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Badge helpers
   getStatusBadgeClass(status: RoomStatus): string {
-    const statusMap: Record<RoomStatus, string> = {
+    // Using Partial allows you to safely omit keys without TS compiler errors
+    const statusMap: Partial<Record<RoomStatus, string>> = {
       'available': 'badge-success',
       'occupied': 'badge-warning',
       'maintenance': 'badge-danger',
       'reserved': 'badge-info'
     };
+
     return statusMap[status] ?? 'badge-default';
   }
 

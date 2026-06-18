@@ -1,5 +1,5 @@
-<article class="stat-card" [class]="tone">
-  <span>{{ label }}</span>
-  <strong>{{ value }}</strong>
-  <small *ngIf="hint">{{ hint }}</small>
+<article class="stat-card" [ngClass]="'tone-' + tone">
+  <span class="stat-label">{{ label }}</span>
+  <strong class="stat-value">{{ value }}</strong>
+  <small *ngIf="hint" class="stat-hint">{{ hint }}</small>
 </article>

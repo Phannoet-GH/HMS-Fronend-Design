@@ -5,6 +5,18 @@ import { forkJoin } from 'rxjs';
 import { ResourceConfig, ResourceManagerComponent } from '../../shared/resource-manager/resource-manager.component';
 import { RoomService } from '@core/services/room.service';
 import { EmployeeService } from '@core/services/employee.service';
+// Ensure the path matches your project structure
+import { Room } from '@core/models/room.model';
+import { Employee } from '@core/models/employee.model';
+import { __values } from 'tslib';
+// 1. Create a map of Service Type -> Required Position
+const serviceToPositionMap: Record<string, string> = {
+  'housekeeping': 'housekeeping',
+  'maintenance': 'maintenance',
+  'food-&-beverage': 'room-service',
+  'luggage': 'bellhop',
+  'wake-up-call': 'receptionist'
+};
 
 @Component({
   selector: 'app-service-requests',
@@ -28,7 +40,8 @@ export class ServiceRequestsComponent implements OnInit {
     emptyLabel: 'Service Request',
     fields: [
       { key: 'roomNumber', label: 'Room Number', required: true, type: 'select', options: [] },
-      { key: 'type', label: 'Request Type', required: true, type: 'select', options: ['Housekeeping', 'Maintenance', 'Food & Beverage', 'Technical', 'other'] },
+      // 🟢 FIXED: Lowercase values to match standard backend enum patterns
+      { key: 'type', label: 'Request Type', required: true, type: 'select', options: ['housekeeping', 'maintenance', 'food-&-beverage', 'technical', 'other'] },
       { key: 'priority', label: 'Priority', type: 'select', options: ['low', 'normal', 'high', 'urgent'] },
       { key: 'assignedTo', label: 'Assigned To', type: 'select', options: [] },
       { key: 'notes', label: 'Notes', type: 'textarea' },
@@ -53,29 +66,44 @@ export class ServiceRequestsComponent implements OnInit {
     this.fetchFormOptions();
   }
 
+
+
   private fetchFormOptions(): void {
     forkJoin({
-      rooms: this.roomService.getAll({ status: 'available' }),
-      employees: this.employeeService.getAll({ status: 'on-duty' })
+      rooms: this.roomService.getRooms(),
+      employees: this.employeeService.getEmployees()
     }).pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ rooms, employees }) => {
+        next: (res) => {
+          // 🟢 Robust extraction: handle both raw arrays and { data: [...] } objects
+          const rooms = Array.isArray(res.rooms) ? res.rooms : (res.rooms as any)?.data ?? [];
+          const employees = Array.isArray(res.employees) ? res.employees : (res.employees as any)?.data ?? [];
+
+          // Update room selection
           const roomField = this.config.fields.find(f => f.key === 'roomNumber');
           if (roomField) {
-            roomField.options = rooms.map(r => `${r.roomNumber} - ${r.type}`);
+            roomField.options = rooms.map((r: Room) => String(r.roomNumber));
           }
 
+          // Update employee assignment selection
           const assignedField = this.config.fields.find(f => f.key === 'assignedTo');
           if (assignedField) {
             assignedField.options = [
-              'Unassigned',
-              ...employees.map(e => `${e.fullName} (${e.department})`)
+              {
+                label: 'Unassigned', value: null
+              },
+              ...employees // 🟢 Now using the extracted array
+                .filter((e: Employee) => e?.status === 'active')
+                .map((e: Employee) => ({
+                  label: `${e.fullName}`,
+                  value: e._id // 🟢 Store the actual ObjectId here!
+                }))
             ];
           }
         },
         error: (err) => {
           this.loadError = true;
-          console.error('[ServiceRequestsComponent] Failed to load form options', err);
+          console.error('[ServiceRequestsComponent] Failed to load options:', err);
         }
       });
   }

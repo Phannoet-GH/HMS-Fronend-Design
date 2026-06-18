@@ -13,12 +13,10 @@ import { AuthService } from '../../../core/services/auth.service';
   styleUrl: './register.component.css'
 })
 export class RegisterComponent {
-
   form = {
     username: '',
     email: '',
-    password: '',
-    roleId: 'r4'
+    password: ''
   };
   errorMessage = '';
   isSubmitting = false;
@@ -26,7 +24,7 @@ export class RegisterComponent {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   register(form: NgForm) {
     if (form.invalid || this.isSubmitting) {
@@ -37,21 +35,15 @@ export class RegisterComponent {
     this.errorMessage = '';
     this.isSubmitting = true;
 
-    const payload = {
+    this.authService.register({
       username: this.form.username.trim(),
       email: this.form.email.trim().toLowerCase(),
       password: this.form.password,
-      roleId: this.form.roleId
-    };
-
-    this.authService.register(payload).pipe(
-      finalize(() => {
-        this.isSubmitting = false;
-      })
+      roleId: 'r4'    // always default — admin assigns roles separately
+    }).pipe(
+      finalize(() => { this.isSubmitting = false; })
     ).subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
+      next: () => this.router.navigate(['/login']),
       error: (err) => {
         this.errorMessage = err.error?.message || 'Registration failed';
       }

@@ -16,8 +16,29 @@ import { Employee } from '@core/models/employee.model';
 
 const today = new Date().toISOString().slice(0, 10);
 
+// 🟢 FIXED: Converted from an object evaluation assignment block into a valid Type Interface blueprint
+export interface CheckInPayload {
+  bookingId: string;
+  roomId: string;
+  employeeId: string;
+  actualCheckInTime: string;
+  keyIssued: boolean;
+  depositAmount: number;
+  paymentMethod: 'cash' | 'card' | 'bank-transfer' | 'qr-code' | 'none';
+  baggageCount: number;
+  status: 'completed';
+  notes: string;
+}
+// Add this interface to your component file
+interface LoadDataResponse {
+  rooms: Room[] | { data: Room[] };
+  bookings: Booking[] | { data: Booking[] };
+  employees: Employee[] | { data: Employee[] };
+}
+
 @Component({
   selector: 'app-check-in',
+  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './check-in.component.html',
   styleUrl: './check-in.component.css',
@@ -42,6 +63,8 @@ export class CheckInComponent implements OnInit, OnDestroy {
     employeeId: string;
     keyIssued: boolean;
     actualCheckInTime: string;
+    depositAmount: number;
+    paymentMethod: 'cash' | 'card' | 'bank-transfer' | 'qr-code' | 'none';
   } = {
       guest: { fullName: '', phone: '', email: '', address: '' },
       roomId: '',
@@ -53,7 +76,9 @@ export class CheckInComponent implements OnInit, OnDestroy {
       paymentStatus: 'pending',
       employeeId: '',
       keyIssued: false,
-      actualCheckInTime: new Date().toISOString().slice(0, 16)
+      actualCheckInTime: new Date().toISOString().slice(0, 16),
+      depositAmount: 0,
+      paymentMethod: 'none'
     };
 
   constructor(
@@ -84,9 +109,9 @@ export class CheckInComponent implements OnInit, OnDestroy {
     }
 
     forkJoin({
-      rooms: this.roomService.getAll({ status: 'available' }),
+      rooms: this.roomService.getRooms(),
       bookings: this.bookingService.getBookings(),
-      employees: this.employeeService.getAll()
+      employees: this.employeeService.getEmployees()
     }).pipe(
       timeout(10000),
       finalize(() => {
@@ -94,15 +119,21 @@ export class CheckInComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: ({ rooms, bookings, employees }) => {
-        this.rooms = rooms;
-        this.bookings = bookings;
-        this.employees = employees.filter(e => e.status !== 'terminated');
-        this.errorMessage = '';
+      // 🟢 Explicitly type the response here
+      next: (res: LoadDataResponse) => {
+        // Use a helper to extract the array, keeping code clean
+        const extract = <T>(val: T[] | { data: T[] }): T[] =>
+          Array.isArray(val) ? val : (val as { data: T[] }).data || [];
+
+        this.rooms = extract(res.rooms);
+        this.bookings = extract(res.bookings);
+        this.employees = extract(res.employees).filter(e => e.status !== 'terminated');
 
         if (!this.form.employeeId && this.employees.length > 0) {
-          this.form.employeeId = this.employees[0]._id;
+          this.form.employeeId = this.employees[0]._id || '';
         }
+        this.errorMessage = '';
+        this.cdr.detectChanges();
       },
       error: (err) => this.handleLoadError(err, silent)
     });
@@ -161,7 +192,7 @@ export class CheckInComponent implements OnInit, OnDestroy {
       roomId: this.form.roomId,
       checkInDate: this.form.checkInDate,
       checkOutDate: this.form.checkOutDate,
-      status: 'checked_in'
+      status: 'confirmed'
     };
 
     const invoiceNights = this.totalNights;
@@ -230,20 +261,23 @@ export class CheckInComponent implements OnInit, OnDestroy {
   private createCheckInRecord(booking: Booking) {
     this.isCreatingCheckIn = true;
 
-    const payload = {
-      bookingId: booking._id,
+    // 🟢 Payload object matches CheckInPayload type layout contract securely
+    const payload: CheckInPayload = {
+      bookingId: booking._id ?? '',
       roomId: this.form.roomId,
       employeeId: this.form.employeeId,
       actualCheckInTime: this.form.actualCheckInTime
         ? new Date(this.form.actualCheckInTime).toISOString()
         : new Date().toISOString(),
       keyIssued: this.form.keyIssued,
-      status: 'completed' as const
+      depositAmount: Number(this.form.depositAmount || 0),
+      paymentMethod: this.form.paymentMethod || 'none',
+      baggageCount: 0,
+      status: 'completed' as const,
+      notes: this.form.notes?.trim() || ''
     };
 
-    console.log('Creating check-in record:', payload);
-
-    this.checkInService.create(payload).pipe(
+    this.checkInService.createCheckIn(payload).pipe(
       timeout(15000),
       finalize(() => {
         this.isCreatingCheckIn = false;
@@ -252,22 +286,20 @@ export class CheckInComponent implements OnInit, OnDestroy {
       })
     ).subscribe({
       next: (record) => {
-        console.log('✅ Check-in record saved:', record);
+        console.log('✅ Check-in transaction verified:', record);
         this.successMessage = 'Guest checked in, invoice created, and check-in record saved';
         this.resetForm();
         this.loadData();
       },
       error: (err) => {
-        console.error('❌ Check-in record failed:', err);
+        console.error('❌ Check-in transaction failed:', err);
         this.successMessage = 'Guest checked in and invoice created';
-        this.errorMessage = 'Check-in record could not be saved — create it manually if needed';
+        this.errorMessage = 'Transaction saved safely, but check-in operations log could not be updated.';
         this.resetForm();
         this.loadData();
       }
     });
   }
-
-  /* --- Fixed Scope Checklist: Methods below are now correctly inside the class --- */
 
   closeInvoicePreview() {
     this.createdInvoice = null;
@@ -287,9 +319,11 @@ export class CheckInComponent implements OnInit, OnDestroy {
       guests: 1,
       notes: '',
       paymentStatus: 'pending',
-      employeeId: this.employees[0]?._id || '',
+      employeeId: this.employees[0]?._id ?? '',
       keyIssued: false,
-      actualCheckInTime: new Date().toISOString().slice(0, 16)
+      actualCheckInTime: new Date().toISOString().slice(0, 16),
+      depositAmount: 0,
+      paymentMethod: 'none'
     };
     this.cdr.detectChanges();
   }
@@ -317,4 +351,8 @@ export class CheckInComponent implements OnInit, OnDestroy {
   get selectedEmployee() {
     return this.employees.find(e => e._id === this.form.employeeId) || null;
   }
-} // Final closing bracket of the class
+  get availableCount() { return (this.rooms || []).filter(r => r.status === 'available').length; }
+  get occupiedCount() { return (this.rooms || []).filter(r => ['occupied', 'reserved'].includes(r.status)).length; }
+  get cleaningCount() { return (this.rooms || []).filter(r => ['dirty', 'cleaning'].includes(r.status)).length; }
+  get maintenanceCount() { return (this.rooms || []).filter(r => r.status === 'maintenance').length; }
+}

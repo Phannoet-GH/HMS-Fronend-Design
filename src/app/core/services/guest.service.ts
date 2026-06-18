@@ -8,21 +8,25 @@ export type Guest = {
   fullName: string;
   email?: string;
   phone: string;
+  idType: 'passport' | 'national-id' | 'driver-license' | 'other';
   idNumber?: string;
+  nationality?: string;
   address?: string;
+  notes?: string;
   createdAt?: string;
+  updatedAt?: string;
 };
 
-export type GuestPayload = Omit<Guest, '_id' | 'createdAt'>;
+export type GuestPayload = Omit<Guest, '_id' | 'createdAt' | 'updatedAt'>;
 
 @Injectable({ providedIn: 'root' })
 export class GuestService {
   private readonly baseUrl = `${API_BASE_URL}/guests`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getGuests(search = '') {
-    const params = search ? new HttpParams().set('search', search) : undefined;
+    const params = search ? new HttpParams().set('search', search) : {};
     return this.http.get<ApiResponse<Guest[]>>(this.baseUrl, { params });
   }
 
@@ -39,6 +43,6 @@ export class GuestService {
   }
 
   deleteGuest(id: string) {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/${id}`);
   }
 }

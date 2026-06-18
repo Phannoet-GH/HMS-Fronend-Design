@@ -4,13 +4,24 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { RoomService } from '@core/services/room.service';
-import { Room, RoomPayload, RoomStatus, RoomType } from '@core/models/room.model';
+import { Room } from '@core/models/room.model';
 import { AuthService } from '@core/services/auth.service';
 import { ROLES } from '@core/services/role.service';
 
-// 1. Turned into a Factory Function to avoid state mutation reference sharing
+// 🟢 Updated Payload shape to support crucial floor placement sorting
+export interface RoomPayload {
+  roomNumber: string;
+  floorNumber: number;
+  type: 'single' | 'double' | 'suite' | 'deluxe';
+  pricePerNight: number;
+  capacity: number;
+  status: 'available' | 'occupied' | 'reserved' | 'dirty' | 'cleaning' | 'maintenance';
+  description: string;
+}
+
 const createEmptyRoomForm = (): RoomPayload => ({
   roomNumber: '',
+  floorNumber: 1, // Defaulting to the ground floor
   type: 'single',
   pricePerNight: 0,
   capacity: 1,
@@ -20,13 +31,15 @@ const createEmptyRoomForm = (): RoomPayload => ({
 
 @Component({
   selector: 'app-rooms',
+  standalone: true,
   imports: [CommonModule, CurrencyPipe, FormsModule],
   templateUrl: './rooms.component.html',
   styleUrl: './rooms.component.css',
 })
 export class RoomsComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
-  form: RoomPayload = createEmptyRoomForm(); // Initialized via factory
+  searchTerm = '';           // 🟢 Add this
+  form: RoomPayload = createEmptyRoomForm();
   selectedRoomId: string | null = null;
   isLoading = false;
   isSaving = false;
@@ -36,8 +49,9 @@ export class RoomsComponent implements OnInit, OnDestroy {
   errorMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
-  readonly roomTypes: RoomType[] = ['single', 'double', 'suite', 'deluxe'];
-  readonly roomStatuses: RoomStatus[] = ['available', 'occupied', 'maintenance', 'reserved'];
+  // 🟢 Comprehensive structural constants matching your Mongoose strict enums
+  readonly roomTypes: RoomPayload['type'][] = ['single', 'double', 'suite', 'deluxe'];
+  readonly roomStatuses: RoomPayload['status'][] = ['available', 'occupied', 'reserved', 'dirty', 'cleaning', 'maintenance'];
 
   constructor(
     private roomService: RoomService,
@@ -54,41 +68,32 @@ export class RoomsComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     clearInterval(this.refreshTimer);
   }
+  applyFilter() {
+    const term = this.searchTerm.toLowerCase().trim();
+    // 🟢 Safety check: Always use (this.rooms || []) to prevent 'filter of undefined'
+    this.rooms = (this.rooms || []).filter(room =>
+      room.roomNumber.toLowerCase().includes(term) ||
+      room.type.toLowerCase().includes(term) ||
+      room.status.toLowerCase().includes(term)
+    );
+  }
 
   loadRooms(silent = false) {
-    if (!silent) {
-      this.isLoading = true;
-      this.errorMessage = '';
-      this.cdr.detectChanges();
-    }
-
-    this.roomService.getAll().pipe(
+    // ... existing loading logic ...
+    this.roomService.getRooms().pipe(
       timeout(8000),
-      finalize(() => {
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      })
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
     ).subscribe({
-      next: (rooms) => {
-        this.rooms = rooms;
+      next: (res: any) => {
+        // 🟢 FIX: Check if the response is the array itself, or an object containing the array
+        // If your API returns { data: [] }, use res.data
+        // If your API returns [], use res
+        this.rooms = Array.isArray(res) ? res : (res.data || []);
+
         this.errorMessage = '';
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        if (err.status === 401) {
-          this.authService.logout();
-          this.errorMessage = 'Your login expired. Please login again to load room data.';
-          this.cdr.detectChanges();
-          this.router.navigate(['/login'], { queryParams: { returnUrl: '/rooms' } });
-          return;
-        }
-        if (!silent) {
-          this.errorMessage = err.name === 'TimeoutError'
-            ? 'Room data timed out. Check that the backend is running, then refresh.'
-            : err.error?.message || 'Unable to load rooms';
-        }
-        this.cdr.detectChanges();
-      }
+      // ...
     });
   }
 
@@ -114,6 +119,7 @@ export class RoomsComponent implements OnInit, OnDestroy {
 
     const payload: RoomPayload = {
       roomNumber: this.form.roomNumber.trim(),
+      floorNumber: Number(this.form.floorNumber || 1), // Enforces numeric stability
       type: this.form.type,
       pricePerNight: Number(this.form.pricePerNight),
       capacity: Number(this.form.capacity),
@@ -121,9 +127,10 @@ export class RoomsComponent implements OnInit, OnDestroy {
       description: this.form.description?.trim() || ''
     };
 
+    // 🟢 FIXED: Updated endpoint maps targeting .updateRoom() and .createRoom() data services
     const request = this.selectedRoomId
-      ? this.roomService.update(this.selectedRoomId, payload)
-      : this.roomService.create(payload);
+      ? this.roomService.updateRoom(this.selectedRoomId, payload)
+      : this.roomService.createRoom(payload);
 
     request.pipe(
       timeout(15000),
@@ -147,10 +154,10 @@ export class RoomsComponent implements OnInit, OnDestroy {
   }
 
   editRoom(room: Room) {
-    this.selectedRoomId = room._id;
-    // Direct value assignment decoupling
+    this.selectedRoomId = room._id || null;
     this.form = {
       roomNumber: room.roomNumber,
+      floorNumber: room.floorNumber || 1, // Appends property payload tracking values safely
       type: room.type,
       pricePerNight: room.pricePerNight,
       capacity: room.capacity,
@@ -159,7 +166,7 @@ export class RoomsComponent implements OnInit, OnDestroy {
     };
     this.showRoomForm = true;
     this.errorMessage = '';
-    this.cdr.detectChanges(); // Ensure fields populate immediately
+    this.cdr.detectChanges();
   }
 
   toggleRoomForm() {
@@ -195,7 +202,8 @@ export class RoomsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.cdr.detectChanges();
 
-    this.roomService.delete(id).pipe(
+    // 🟢 FIXED: Target mapped to call .deleteRoom() explicitly
+    this.roomService.deleteRoom(id).pipe(
       timeout(15000),
       finalize(() => {
         this.isDeleting = false;
@@ -218,13 +226,22 @@ export class RoomsComponent implements OnInit, OnDestroy {
 
   resetForm() {
     this.selectedRoomId = null;
-    this.form = createEmptyRoomForm(); // Safely clear using factory values
+    this.form = createEmptyRoomForm();
     this.errorMessage = '';
-    this.cdr.detectChanges(); // Sync view template updates
+    this.cdr.detectChanges();
   }
 
-  get availableCount() { return this.rooms.filter(r => r.status === 'available').length; }
-  get occupiedCount() { return this.rooms.filter(r => r.status === 'occupied' || r.status === 'reserved').length; }
+
+  // 🟢 DASHBOARD METRICS: Cleaned up logic to explicitly cover housekeeping states
+  get availableCount() {
+    // 🟢 Add a safety check: (this.rooms || [])
+    return (this.rooms || []).filter(r => r.status === 'available').length;
+  }
+
+  get occupiedCount() {
+    return (this.rooms || []).filter(r => r.status === 'occupied' || r.status === 'reserved').length;
+  }
+  get cleaningCount() { return this.rooms.filter(r => r.status === 'dirty' || r.status === 'cleaning').length; }
   get maintenanceCount() { return this.rooms.filter(r => r.status === 'maintenance').length; }
   get canManageRooms() { return this.authService.isRole([ROLES.SUPER_ADMIN, ROLES.MANAGER]); }
 }

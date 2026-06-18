@@ -63,7 +63,7 @@
             <div class="room-picker" role="radiogroup" aria-label="Available rooms">
               <button *ngFor="let room of availableRooms" type="button" class="room-option"
                 [class.selected]="form.roomId === room._id" [attr.aria-checked]="form.roomId === room._id" role="radio"
-                (click)="selectRoom(room._id)">
+                (click)="selectRoom(room._id || '')">
                 <span class="room-option-top">
                   <strong>{{ room.roomNumber }}</strong>
                   <span>{{ room.type | titlecase }}</span>
@@ -108,7 +108,7 @@
             <select name="employeeId" [(ngModel)]="form.employeeId" required>
               <option value="">Select staff member</option>
               <option *ngFor="let emp of employees" [value]="emp._id">
-                {{ emp.fullName }} ({{ emp.department }})
+                {{ emp.fullName }}
               </option>
             </select>
           </label>

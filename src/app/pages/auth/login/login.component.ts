@@ -26,7 +26,7 @@ export class LoginComponent {
     private roleService: RoleService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   login() {
     this.errorMessage = '';
@@ -35,15 +35,15 @@ export class LoginComponent {
     this.authService.login(this.form).subscribe({
       next: (res) => {
         this.authService.saveToken(res.token);
-        
-        // Get the user's role and redirect accordingly
-        const userRole = res.user.roleId;
+
+        // Guard against missing user in response
+        const userRole = res.user?.roleId;
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
         const defaultRoute = returnUrl || this.roleService.getDefaultRoute(userRole);
         const roleName = this.roleService.getRoleName(userRole);
-        
+
         console.log(`✓ Login successful as ${roleName}. Redirecting to ${defaultRoute}...`);
-        
+
         this.router.navigate([defaultRoute]).then(() => {
           this.isSubmitting = false;
         });

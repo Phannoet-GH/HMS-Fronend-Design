@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
-import { finalize, forkJoin, timeout } from 'rxjs';
+import { finalize, forkJoin, pipe, timeout } from 'rxjs';
 import { BookingService } from '../../core/services/booking.service';
 import { RoomService } from '../../core/services/room.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,6 +10,7 @@ import { Booking, BookingPayload } from '../../core/models/booking.model';
 import { Room } from '../../core/models/room.model';
 
 const today = new Date().toISOString().slice(0, 10);
+
 // Explicitly type this so TypeScript knows status can be any valid BookingStatus
 const emptyBookingForm: BookingPayload = {
   guest: {
@@ -22,8 +23,8 @@ const emptyBookingForm: BookingPayload = {
   roomId: '',
   checkInDate: today,
   checkOutDate: '',
-  status: 'confirmed' // Initial value is confirmed, but type is wide
-};
+  status: 'confirmed'
+} as BookingPayload; // 🟢 Force the type here
 
 @Component({
   selector: 'app-bookings',
@@ -64,15 +65,10 @@ export class BookingsComponent implements OnInit, OnDestroy {
   }
 
   loadData(silent = false) {
-    if (!silent) {
-      this.isLoading = true;
-      this.errorMessage = '';
-      this.cdr.detectChanges();
-    }
+    if (!silent) this.isLoading = true;
 
-    // Changed exclusively to .getAll() to match your working CheckIn architecture
     forkJoin({
-      rooms: this.roomService.getAll(),
+      rooms: this.roomService.getRooms(),
       bookings: this.bookingService.getBookings()
     }).pipe(
       timeout(10000),
@@ -82,14 +78,16 @@ export class BookingsComponent implements OnInit, OnDestroy {
       })
     ).subscribe({
       next: (res: any) => {
-        // Safe-check wrapper extraction: handles both raw arrays and unified envelope objects ({ data: [...] })
-        this.rooms = Array.isArray(res.rooms) ? res.rooms : (res.rooms && Array.isArray(res.rooms.data) ? res.rooms.data : []);
-        this.bookings = Array.isArray(res.bookings) ? res.bookings : (res.bookings && Array.isArray(res.bookings.data) ? res.bookings.data : []);
+        // 🟢 Assign only after successful retrieval
+        const newBookings = Array.isArray(res.bookings) ? res.bookings : (res.bookings?.data || []);
+        const newRooms = Array.isArray(res.rooms) ? res.rooms : (res.rooms?.data || []);
+
+        this.bookings = newBookings;
+        this.rooms = newRooms;
         this.errorMessage = '';
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.handleError(err, 'Unable to load bookings data', silent);
-      }
+      error: (err) => this.handleError(err, 'Unable to load data', silent)
     });
   }
 
@@ -148,23 +146,26 @@ export class BookingsComponent implements OnInit, OnDestroy {
       status: this.form.status
     };
 
-    this.bookingService.createBooking(payload).pipe(
-      timeout(15000),
-      finalize(() => {
-        this.isSaving = false;
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: () => {
-        this.form = structuredClone(emptyBookingForm);
-        this.showBookingForm = false;
-        this.successMessage = 'Booking created successfully';
-        this.loadData();
-      },
-      error: (err) => {
-        this.handleError(err, 'Unable to create booking');
-      }
-    });
+    this.bookingService.createBooking(payload)
+      .pipe(
+
+        timeout(15000),
+        finalize(() => {
+          this.isSaving = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (booking: Booking) => { // 🟢 Ensure the type here matches
+          this.form = structuredClone(emptyBookingForm);
+          this.showBookingForm = false;
+          this.successMessage = 'Booking created successfully';
+          this.loadData();
+        },
+        error: (err: any) => {
+          this.handleError(err, 'Unable to create booking');
+        }
+      });
   }
 
   toggleBookingForm() {

@@ -5,8 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ResourceConfig, ResourceManagerComponent } from '../../shared/resource-manager/resource-manager.component';
 import { BookingService } from '@core/services/booking.service';
 import { InventoryService } from '@core/services/inventory.service';
-import { InventoryItem } from '@core/models/inventory.model';
-import { ResourceRecord } from '@core/services/resource.service';
+import { Booking } from '@core/models/booking.model';
 
 @Component({
   selector: 'app-room-services',
@@ -21,6 +20,8 @@ export class RoomServicesComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
 
   private inventoryMap = new Map<string, number>();
+  private roomGuestMap = new Map<string, string>();
+
   loadError = false;
   config!: ResourceConfig;
 
@@ -37,7 +38,16 @@ export class RoomServicesComponent implements OnInit {
       createLabel: 'New Order',
       emptyLabel: 'Room Service Order',
       fields: [
-        { key: 'roomNumber', label: 'Room Number', required: true, type: 'select', options: [] },
+        {
+          key: 'roomNumber',
+          label: 'Room Number',
+          required: true,
+          type: 'select',
+          options: [],
+          onFieldChange: (value: string) => {
+            return { guestName: this.roomGuestMap.get(value) || '' };
+          }
+        },
         { key: 'guestName', label: 'Guest Name', required: true, type: 'select', options: [] },
         {
           key: 'items',
@@ -45,9 +55,8 @@ export class RoomServicesComponent implements OnInit {
           required: true,
           type: 'select',
           options: [],
-          onFieldChange: (value: string, _form: ResourceRecord) => {
-            const price = this.inventoryMap.get(value) ?? 0;
-            return { totalAmount: price };
+          onFieldChange: (value: string) => {
+            return { totalAmount: this.inventoryMap.get(value) ?? 0 };
           }
         },
         { key: 'totalAmount', label: 'Total Amount', required: true, type: 'number' },
@@ -74,36 +83,42 @@ export class RoomServicesComponent implements OnInit {
   private fetchFormOptions(): void {
     forkJoin({
       bookings: this.bookingService.getBookings({ status: 'checked_in' }),
-      inventory: this.inventoryService.getAll({ status: 'available' })
+      inventory: this.inventoryService.getAll({ status: 'in-stock' })
     }).pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ bookings, inventory }) => {
+        next: (res) => {
+          const bookings = Array.isArray(res.bookings) ? res.bookings : (res.bookings as any)?.data ?? [];
+          const inventory = Array.isArray(res.inventory) ? res.inventory : (res.inventory as any)?.data ?? [];
+
+          // 1. Sync Room and Guest
+          this.roomGuestMap.clear();
+          bookings.forEach((b: Booking) => {
+            if (b.room?.roomNumber) {
+              this.roomGuestMap.set(String(b.room.roomNumber), b.guest?.fullName || 'Unknown');
+            }
+          });
+
+          // 2. Update Field Options
           const roomField = this.config.fields.find(f => f.key === 'roomNumber');
-          if (roomField) {
-            roomField.options = [
-              ...new Set(bookings.filter(b => b.room).map(b => b.room!.roomNumber))
-            ];
-          }
+          if (roomField) roomField.options = Array.from(this.roomGuestMap.keys());
 
           const guestField = this.config.fields.find(f => f.key === 'guestName');
-          if (guestField) {
-            guestField.options = bookings.map(b => b.guest.fullName);
-          }
+          if (guestField) guestField.options = [...new Set(Array.from(this.roomGuestMap.values()))];
 
+          // 3. Map Inventory Items
           this.inventoryMap.clear();
-          inventory.forEach((item: InventoryItem) => {
-            const label = `${item.name} ($${item.price.toFixed(2)})`;
-            this.inventoryMap.set(label, item.price);
+          inventory.forEach((item: any) => {
+            const price = Number(item.price ?? item.unitCost ?? 0);
+            const label = `${item.name} ($${price.toFixed(2)})`;
+            this.inventoryMap.set(label, price);
           });
 
           const itemsField = this.config.fields.find(f => f.key === 'items');
-          if (itemsField) {
-            itemsField.options = Array.from(this.inventoryMap.keys());
-          }
+          if (itemsField) itemsField.options = Array.from(this.inventoryMap.keys());
         },
         error: (err) => {
           this.loadError = true;
-          console.error('[RoomServicesComponent] Failed to load form options', err);
+          console.error('[RoomServicesComponent] Failed to load data', err);
         }
       });
   }

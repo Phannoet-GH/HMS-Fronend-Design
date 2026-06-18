@@ -24,7 +24,7 @@ export class UsersComponent implements OnInit, OnDestroy {
   errorMessage = '';
   private refreshTimer?: ReturnType<typeof setInterval>;
 
-  constructor(private userService: UserService, private roleService: RoleService) {}
+  constructor(private userService: UserService, private roleService: RoleService) { }
 
   ngOnInit() {
     this.loadUsers();
@@ -83,16 +83,16 @@ export class UsersComponent implements OnInit, OnDestroy {
 
     const request = this.selectedId
       ? this.userService.updateUser(this.selectedId, {
-          username,
-          email,
-          roleId: this.form.roleId
-        })
+        username,
+        email,
+        roleId: this.form.roleId
+      })
       : this.userService.createUser({
-          username,
-          email,
-          password,
-          roleId: this.form.roleId
-        });
+        username,
+        email,
+        password,
+        roleId: this.form.roleId
+      });
 
     request.pipe(
       timeout(15000),

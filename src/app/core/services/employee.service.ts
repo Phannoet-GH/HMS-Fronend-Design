@@ -1,75 +1,44 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, map, throwError } from 'rxjs';
-import { Employee, EmployeeShift, EmployeeStatus } from '@core/models/employee.model';
-import { ApiResponse } from '@core/models/api-response.model';
-import { API_BASE_URL } from '@core/api.config';
+import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../api.config';
+import { Employee } from '../models/employee.model';
 
-export interface EmployeeQueryParams {
-    status?: EmployeeStatus;
-    department?: string;
-    shift?: EmployeeShift;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+    providedIn: 'root'
+})
 export class EmployeeService {
-    private readonly endpoint = `${API_BASE_URL}/employees`;
+    private readonly apiUrl = `${API_BASE_URL}/employees`;
 
     constructor(private http: HttpClient) { }
 
-    getAll(filters: EmployeeQueryParams = {}): Observable<Employee[]> {
-        let params = new HttpParams();
-        // Temporary test in fetchFormOptions
-        if (filters.status) params = params.set('status', filters.status);
-        if (filters.department) params = params.set('department', filters.department);
-        if (filters.shift) params = params.set('shift', filters.shift);
-
-        return this.http.get<ApiResponse<Employee[]>>(this.endpoint, { params }).pipe(
-            map(res => res.data),
-            catchError(err => {
-                console.error('[EmployeeService] getAll failed', err);
-                return throwError(() => err);
-            })
-        );
+    /** 💼 Fetch all employees (backend can populate department/user info) */
+    getEmployees(): Observable<Employee[]> {
+        return this.http.get<Employee[]>(this.apiUrl);
     }
 
-    getById(id: string): Observable<Employee> {
-        return this.http.get<ApiResponse<Employee>>(`${this.endpoint}/${id}`).pipe(
-            map(res => res.data),
-            catchError(err => {
-                console.error(`[EmployeeService] getById(${id}) failed`, err);
-                return throwError(() => err);
-            })
-        );
+    /** 🔍 Fetch a specific employee details */
+    getEmployeeById(id: string): Observable<Employee> {
+        return this.http.get<Employee>(`${this.apiUrl}/${id}`);
     }
 
-    create(payload: Omit<Employee, '_id' | 'createdAt' | 'updatedAt'>): Observable<Employee> {
-        return this.http.post<ApiResponse<Employee>>(this.endpoint, payload).pipe(
-            map(res => res.data),
-            catchError(err => {
-                console.error('[EmployeeService] create failed', err);
-                return throwError(() => err);
-            })
-        );
+    /** 🚀 Get employee profile mapped to the logged-in user account ID */
+    getProfileByUserId(userId: string): Observable<Employee> {
+        return this.http.get<Employee>(`${this.apiUrl}/user/${userId}`);
     }
 
-    update(id: string, payload: Partial<Omit<Employee, '_id' | 'createdAt' | 'updatedAt'>>): Observable<Employee> {
-        return this.http.put<ApiResponse<Employee>>(`${this.endpoint}/${id}`, payload).pipe(
-            map(res => res.data),
-            catchError(err => {
-                console.error(`[EmployeeService] update(${id}) failed`, err);
-                return throwError(() => err);
-            })
-        );
+    /** ➕ Create/Register a new employee profile */
+    createEmployee(employeeData: Employee): Observable<Employee> {
+        return this.http.post<Employee>(this.apiUrl, employeeData);
     }
 
-    delete(id: string): Observable<void> {
-        return this.http.delete<ApiResponse<null>>(`${this.endpoint}/${id}`).pipe(
-            map(() => void 0),
-            catchError(err => {
-                console.error(`[EmployeeService] delete(${id}) failed`, err);
-                return throwError(() => err);
-            })
-        );
+    /** ✏️ Update employee profile details or change work status */
+    updateEmployee(id: string, employeeData: Partial<Employee>): Observable<Employee> {
+        return this.http.put<Employee>(`${this.apiUrl}/${id}`, employeeData);
+    }
+
+    /** ❌ Delete an employee record */
+    deleteEmployee(id: string): Observable<any> {
+        return this.http.delete<any>(`${this.apiUrl}/${id}`);
     }
 }

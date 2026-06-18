@@ -2,56 +2,25 @@
   <section class="register-card">
     <span class="brand-mark">HS</span>
     <h2 class="title">Create Account</h2>
-    <p class="subtitle">Choose a role and connect to the hotel workspace.</p>
+    <p class="subtitle">Register to access the hotel workspace.</p>
 
     <form #registerForm="ngForm" (ngSubmit)="register(registerForm)">
       <label>
         Username
-        <input
-          type="text"
-          name="username"
-          [(ngModel)]="form.username"
-          placeholder="Full name"
-          autocomplete="name"
-          required
-        />
+        <input type="text" name="username" [(ngModel)]="form.username" placeholder="Full name" autocomplete="name"
+          required />
       </label>
 
       <label>
         Email
-        <input
-          type="email"
-          name="email"
-          [(ngModel)]="form.email"
-          placeholder="name@hotel.com"
-          autocomplete="email"
-          email
-          required
-        />
+        <input type="email" name="email" [(ngModel)]="form.email" placeholder="name@hotel.com" autocomplete="email"
+          email required />
       </label>
 
       <label>
         Password
-        <input
-          type="password"
-          name="password"
-          [(ngModel)]="form.password"
-          placeholder="Create password"
-          autocomplete="new-password"
-          minlength="6"
-          required
-        />
-      </label>
-
-      <label>
-        Role
-        <select name="roleId" [(ngModel)]="form.roleId">
-          <option value="r1">Super Admin</option>
-          <option value="r2">Manager</option>
-          <option value="r3">Housekeeping</option>
-          <option value="r4">Front Desk</option>
-          <option value="r5">Account</option>
-        </select>
+        <input type="password" name="password" [(ngModel)]="form.password" placeholder="Create password"
+          autocomplete="new-password" minlength="6" required />
       </label>
 
       <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
@@ -62,8 +31,7 @@
     </form>
 
     <p class="footer-text">
-      Already have an account?
-      <a routerLink="/login">Login</a>
+      Already have an account? <a routerLink="/login">Login</a>
     </p>
   </section>
 </div>

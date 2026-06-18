@@ -4,9 +4,11 @@
       <h1>Rooms</h1>
       <p>Manage room inventory, nightly rates, and room status.</p>
     </div>
-    <button *ngIf="canManageRooms" type="button" class="btn" (click)="toggleRoomForm()">
-      {{ showRoomForm ? (selectedRoomId ? 'Cancel Edit' : 'Close Form') : 'New Room' }}
-    </button>
+    <div class="actions">
+      <input type="text" placeholder="Search by number, type..." [(ngModel)]="searchTerm" (input)="applyFilter()"
+        class="form-control" />
+      <button type="button" class="btn" (click)="toggleRoomForm()" style="width: 150px;">Add Room</button>
+    </div>
   </header>
 
   <section class="summary-grid" aria-label="Room summary">
@@ -22,6 +24,10 @@
       <span>Reserved or Occupied</span>
       <strong>{{ occupiedCount }}</strong>
     </article>
+    <article class="summary-item cleaning-card">
+      <span>Housekeeping (Dirty/Cleaning)</span>
+      <strong>{{ cleaningCount }}</strong>
+    </article>
     <article class="summary-item maintenance-card">
       <span>Maintenance</span>
       <strong>{{ maintenanceCount }}</strong>
@@ -32,16 +38,26 @@
     <form *ngIf="showRoomForm && canManageRooms" #roomForm="ngForm" class="room-form" (ngSubmit)="saveRoom(roomForm)">
       <h2>{{ selectedRoomId ? 'Edit Room #' + form.roomNumber : 'Create Room' }}</h2>
 
-      <label>
-        Room Number
-        <input name="roomNumber" [(ngModel)]="form.roomNumber" autocomplete="off" required #roomNumField="ngModel" />
-        <span *ngIf="roomNumField.touched && roomNumField.invalid" class="field-error">Room number is required</span>
-      </label>
+      <div class="form-row">
+        <label>
+          Room Number
+          <input name="roomNumber" [(ngModel)]="form.roomNumber" autocomplete="off" required #roomNumField="ngModel" />
+          <span *ngIf="roomNumField.touched && roomNumField.invalid" class="field-error">Room number is required</span>
+        </label>
+
+        <label>
+          Floor Placement
+          <input type="number" name="floorNumber" min="1" [(ngModel)]="form.floorNumber" required
+            #floorField="ngModel" />
+          <span *ngIf="floorField.touched && floorField.invalid" class="field-error">Floor placement number is
+            required</span>
+        </label>
+      </div>
 
       <label>
         Type
         <select name="type" [(ngModel)]="form.type">
-          <option *ngFor="let type of roomTypes" [value]="type">{{ type }}</option>
+          <option *ngFor="let type of roomTypes" [value]="type">{{ type | titlecase }}</option>
         </select>
       </label>
 
@@ -62,7 +78,7 @@
       <label>
         Status
         <select name="status" [(ngModel)]="form.status">
-          <option *ngFor="let status of roomStatuses" [value]="status">{{ status }}</option>
+          <option *ngFor="let status of roomStatuses" [value]="status">{{ status | titlecase }}</option>
         </select>
       </label>
 
@@ -100,6 +116,7 @@
           <thead>
             <tr>
               <th>Room</th>
+              <th>Floor</th>
               <th>Type</th>
               <th>Capacity</th>
               <th>Price</th>
@@ -110,11 +127,12 @@
           <tbody>
             <tr *ngFor="let room of rooms">
               <td><strong>{{ room.roomNumber }}</strong></td>
-              <td>{{ room.type }}</td>
+              <td>Floor {{ room.floorNumber || 1 }}</td>
+              <td>{{ room.type | titlecase }}</td>
               <td>{{ room.capacity }} guests</td>
               <td>{{ room.pricePerNight | currency }}</td>
               <td>
-                <span class="status" [class]="room.status">{{ room.status }}</span>
+                <span class="status" [class]="room.status">{{ room.status | titlecase }}</span>
               </td>
               <td *ngIf="canManageRooms" class="row-actions">
                 <button type="button" class="secondary" (click)="editRoom(room)">Edit</button>
@@ -136,8 +154,9 @@
       </p>
 
       <div class="modal-details">
-        <span>Type: <strong>{{ roomPendingDelete.type }}</strong></span>
-        <span>Status: <strong>{{ roomPendingDelete.status }}</strong></span>
+        <span>Floor: <strong>{{ roomPendingDelete.floorNumber || 1 }}</strong></span>
+        <span>Type: <strong>{{ roomPendingDelete.type | titlecase }}</strong></span>
+        <span>Status: <strong>{{ roomPendingDelete.status | titlecase }}</strong></span>
         <span>Price: <strong>{{ roomPendingDelete.pricePerNight | currency }}</strong></span>
       </div>
 

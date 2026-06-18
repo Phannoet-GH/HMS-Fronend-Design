@@ -17,12 +17,47 @@ export class SuppliersComponent {
     createLabel: 'Add Supplier',
     emptyLabel: 'Supplier',
     fields: [
-      { key: 'name', label: 'Supplier Name', required: true },
-      { key: 'contactName', label: 'Contact Name' },
-      { key: 'phone', label: 'Phone' },
-      { key: 'email', label: 'Email' },
-      { key: 'category', label: 'Category' },
-      { key: 'status', label: 'Status', type: 'select', options: ['active', 'paused', 'inactive'] }
+      {
+        key: 'name',
+        label: 'Supplier Name',
+        required: true
+      },
+      {
+        key: 'contactName',
+        label: 'Contact Name'
+      },
+      {
+        key: 'phone',
+        label: 'Phone'
+      },
+      {
+        key: 'email',
+        label: 'Email'
+      },
+      {
+        key: 'category',
+        label: 'Category',
+        required: true,
+        type: 'select',
+        options: [
+          'f&b',
+          'linen-textiles',
+          'guest-amenities',
+          'maintenance-repaired',
+          'cleaning-janitorial',
+          'office-it'
+        ]
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          'active',
+          'paused',
+          'inactive'
+        ]
+      }
     ],
     columns: [
       { key: 'name', label: 'Supplier' },

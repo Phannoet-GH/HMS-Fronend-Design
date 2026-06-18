@@ -27,7 +27,7 @@ export type BookingPayload = {
     roomId: string;
     checkInDate: string;
     checkOutDate: string;
-    status?: BookingStatus;
+    status: BookingStatus;
 };
 
 export interface BookingQueryParams {

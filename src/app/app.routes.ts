@@ -74,21 +74,21 @@ export const routes: Routes = [
         path: 'checkin',
         component: CheckInComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'check-in',
         component: CheckInComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.FRONT_DESK] }
       },
 
       {
         path: 'checkout',
         component: CheckoutComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.FRONT_DESK] }
       },
 
       {
@@ -118,14 +118,14 @@ export const routes: Routes = [
         path: 'invoices',
         component: InvoicesComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.FRONT_DESK, ROLES.ACCOUNT] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.FRONT_DESK, ROLES.ACCOUNT] }
       },
 
       {
         path: 'payments',
         component: PaymentsComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT, ROLES.MANAGER] }
       },
 
       /* GUESTS & STAFF */
@@ -141,14 +141,14 @@ export const routes: Routes = [
         path: 'employees',
         component: EmployeesComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       {
         path: 'departments',
         component: DepartmentsComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       /* SUPPLY CHAIN */
@@ -157,21 +157,21 @@ export const routes: Routes = [
         path: 'inventory',
         component: InventoryComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       {
         path: 'suppliers',
         component: SuppliersComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       {
         path: 'purchase-orders',
         component: PurchaseOrdersComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.MANAGER] }
       },
 
       /* ADMIN */
@@ -194,7 +194,7 @@ export const routes: Routes = [
         path: 'reports',
         component: ReportsComponent,
         canActivate: [RoleGuard],
-        data: { roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT] }
+        data: { roles: [ROLES.SUPER_ADMIN, ROLES.ACCOUNT, ROLES.MANAGER] }
       },
 
       {
